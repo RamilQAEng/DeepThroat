@@ -129,20 +129,98 @@ def run_red_team(
     return red_team(**kwargs)
 
 
+import re
+import httpx
+
+def get_value_by_path(obj: dict, path: str, default=None):
+    if not path:
+        return obj
+    keys = path.split('.')
+    val = obj
+    try:
+        for k in keys:
+            if isinstance(val, dict):
+                val = val.get(k)
+            elif isinstance(val, list) and k.isdigit():
+                val = val[int(k)]
+            else:
+                return default
+            if val is None:
+                return default
+        return val
+    except Exception:
+        return default
+
+def resolve_template_text(text: str, variables: dict) -> str:
+    def replacer(match):
+        var_name = match.group(1).strip()
+        return str(variables.get(var_name, match.group(0)))
+    return re.sub(r"\{\{([^}]+)\}\}", replacer, text)
+
+def resolve_template_recursive(template, variables: dict):
+    if isinstance(template, str):
+        return resolve_template_text(template, variables)
+    elif isinstance(template, dict):
+        return {k: resolve_template_recursive(v, variables) for k, v in template.items()}
+    elif isinstance(template, list):
+        return [resolve_template_recursive(item, variables) for item in template]
+    return template
+
+def create_http_callback(api_config: dict):
+    """Return an async callback that sends the attack payload to a custom HTTP API."""
+    async def model_callback(input_text: str, messages: Optional[list[RTTurn]] = None) -> RTTurn:
+        url = api_config.get("url")
+        method = api_config.get("method", "POST").upper()
+        headers = api_config.get("headers", {})
+        body_template = api_config.get("body", {})
+
+        # We treat input_text as the 'user_query' since Red Teaming attacks the prompt
+        variables = {"user_query": input_text, "category": "red_teaming_attack"}
+        payload = resolve_template_recursive(body_template, variables)
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0, verify=False) as client:
+                if method == "POST":
+                    resp = await client.post(url, headers=headers, json=payload)
+                elif method == "GET":
+                    resp = await client.get(url, headers=headers, params=payload)
+                else:
+                    return RTTurn(role="assistant", content=f"[ERROR: Unsupported HTTP method: {method}]")
+            
+            if resp.status_code != 200:
+                return RTTurn(role="assistant", content=f"[ERROR: API {resp.status_code} at {url}]")
+            
+            data = resp.json()
+            ex_answer = api_config.get("extractors", {}).get("answer", "answer")
+            answer = get_value_by_path(data, ex_answer, None)
+            
+            if answer is None:
+                answer = f"[ERROR: Extractor path '{ex_answer}' failed to find answer in {resp.text[:100]}]"
+                
+            return RTTurn(role="assistant", content=str(answer))
+            
+        except Exception as e:
+            return RTTurn(role="assistant", content=f"[ERROR: HTTP Call failed: type={type(e).__name__} msg={e}]")
+
+    return model_callback
+
 def run(
-    model: str,
-    system_prompt: str,
+    model: str = "",
+    system_prompt: str = "",
     attacks_per_vulnerability_type: int = 1,
     provider: str = "anthropic",
     api_key: str | None = None,
     judge_preset: str | None = None,
     attack_configs: list[AttackConfig] | None = None,
     vuln_configs: list[VulnerabilityConfig] | None = None,
+    api_config: dict | None = None,
 ) -> Any:
     """Entry point for script/CLI usage."""
     from src.red_team.judges import build_judge_from_preset
 
-    if provider == "openrouter":
+    if api_config:
+        callback = create_http_callback(api_config)
+    elif provider == "openrouter":
         callback = create_openrouter_callback(model, system_prompt, api_key)
     else:
         callback = create_anthropic_callback(model, system_prompt, api_key)

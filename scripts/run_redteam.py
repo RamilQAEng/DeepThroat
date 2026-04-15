@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -99,6 +100,7 @@ def main() -> None:
         "--judge", default=None,
         help="Judge preset: gpt-4o-mini, gemini-flash, llama3-70b, haiku, ollama-llama, ollama-mistral, ollama-phi",
     )
+    parser.add_argument("--dynamic-api-config", default=None, help="Path to dynamic API contract JSON")
     args = parser.parse_args()
 
     if args.output:
@@ -112,9 +114,16 @@ def main() -> None:
     if custom_presets:
         register_custom_presets(custom_presets)
 
-    target = _find_target(args.targets, args.target)
+    api_config = None
+    if args.dynamic_api_config:
+        with open(args.dynamic_api_config, "r", encoding="utf-8") as f:
+            api_config = json.load(f)
+        target = {"model": "dynamic-api", "system_prompt": "N/A", "provider": "http"}
+    else:
+        target = _find_target(args.targets, args.target)
+
     model = args.model or target["model"]
-    system_prompt = target["system_prompt"]
+    system_prompt = target.get("system_prompt", "")
     attacks_per_type = cfg.get("attacks_per_vulnerability_type", 1)
     asr_threshold = cfg.get("asr_threshold", 0.20)
 
@@ -154,6 +163,7 @@ def main() -> None:
         judge_preset=judge_preset,
         attack_configs=attack_configs,
         vuln_configs=vuln_configs,
+        api_config=api_config,
     )
 
     judge_label = judge_preset or "deepeval-default"

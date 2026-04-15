@@ -2,18 +2,22 @@
 
 Все значимые изменения в проекте DeepThroath документируются в этом файле.
 
-## [Unreleased] - 2026-04-15 (API Runner & Environment Unification)
+## [Unreleased] - 2026-04-15 (Unified API Runner: RAG Eval + Red Teaming)
 
 ### 🚀 Отличительные фичи к добавлению (Features)
--  **API Runner Dashboard**
-    - Добавлена новая страница `/runner` в Next.js дашборд.
-    - Реализована форма "API Contract" для динамического тестирования RAG-бэкендов: поддержка кастомного URL, Method, кастомных Headers и тела запроса с шорткодами (`{{user_query}}`, `{{category}}`).
-    - Добавлен интерфейс для выбора метрик (можно отключать/включать AR, FA, CP, CR).
-    - Бэкенд-эндпоинт `/api/runner`, который асинхронно спавнит фоновый Python процесс для непрерывного выполнения оценки.
-- **Python-Ядро для RAG API**
-    - В функцию `fetch_from_api` (в файле `eval_rag_metrics.py`) добавлена поддержка динамического JSON-конфига и рекурсивной обработки макротекстов из шаблона.
-    - В `run_eval.py` введена флаговая опция CLI `--dynamic-api-config` для передачи полного контракта из UI.
-    - Реализованы Json Extractors – возможность извлекать результаты ответа по вложенным путям (напр. `data.retrieved_chunks_array[0]`).
+-  **Unified API Runner Dashboard (Убер-Раннер)**
+    - Добавлена новая страница `/runner` в Next.js дашборд с двумя режимами работы через табы:
+      - **Evaluate RAG**: Оценка качества RAG-систем с выбором метрик (AR, FA, CP, CR) и лимитом датасета
+      - **Red Teaming**: Тестирование безопасности LLM с настройкой количества атак и порога успеха (ASR Threshold)
+    - Реализована единая форма "API Contract" для обоих режимов: поддержка кастомного URL, Method, Headers и тела запроса с шорткодами (`{{user_query}}`, `{{category}}`).
+    - Умные Extractors для парсинга ответов API по вложенным путям (напр. `data.answer`, `retrieved_chunks`).
+- **Python Backend Integration**
+    - В `run_eval.py` добавлена флаговая опция CLI `--dynamic-api-config` для RAG Evaluation через API контракт.
+    - В `run_redteam.py` добавлена поддержка `--dynamic-api-config` для Red Teaming атак через HTTP callback.
+    - В `src/red_team/runner.py` реализован `create_http_callback()` для асинхронной отправки атак на произвольные API.
+- **API Routes**
+    - `/api/runner` - запуск RAG Evaluation с динамическим API контрактом
+    - `/api/runner/redteam` - запуск Red Teaming сканирования с поддержкой параметров `attacks_per_vulnerability` и `threshold`
 
 ### 🏗 Изменения инфраструктуры (Infrastructure & DevOps)
 - **Унификация Venv**

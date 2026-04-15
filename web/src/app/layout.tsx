@@ -39,7 +39,7 @@ export default function RootLayout({
                  </span>
                  <nav className="flex items-center gap-3">
                     <a href="/" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">🛡️ Red Teaming</a>
-                    <a href="/eval" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">📊 Качество RAG</a>
+                    <a href="/eval" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">📊 Evaluate RAG</a>
                     <a href="/runner" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-500/20 border border-transparent hover:border-cyan-500/30 transition-all drop-shadow-sm">🚀 API Runner</a>
                  </nav>
               </div>

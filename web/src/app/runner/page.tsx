@@ -4,27 +4,36 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Play, Activity, Database, Braces, Link2, ExternalLink, Loader2, Key } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Play, Activity, Database, Braces, Link2, ExternalLink, Loader2, Key, Shield, BarChart3 } from "lucide-react";
 
 export default function RunnerPage() {
+    const [activeTab, setActiveTab] = useState<string>("eval");
     const [datasets, setDatasets] = useState<{name: string, path: string}[]>([]);
     const [datasetPath, setDatasetPath] = useState<string>("");
-    
+
+    // Общие поля API контракта
     const [url, setUrl] = useState("http://localhost:8000/api/v1/eval/rag");
     const [method, setMethod] = useState("POST");
     const [headersStr, setHeadersStr] = useState("{\n  \"Content-Type\": \"application/json\"\n}");
     const [bodyStr, setBodyStr] = useState("{\n  \"question\": \"{{user_query}}\",\n  \"category\": \"{{category}}\"\n}");
     const [extractAnswer, setExtractAnswer] = useState("answer");
     const [extractChunks, setExtractChunks] = useState("retrieved_chunks");
-    const [limit, setLimit] = useState<string>("");
-    const [judge, setJudge] = useState("gpt4o-mini-or");
 
+    // Настройки для Eval
+    const [limit, setLimit] = useState<string>("");
+    const [evalJudge, setEvalJudge] = useState("gpt4o-mini-or");
     const [metrics, setMetrics] = useState({
         AR: true,
         FA: true,
         CP: true,
         CR: true
     });
+
+    // Настройки для RedTeam
+    const [attacksPerVuln, setAttacksPerVuln] = useState<string>("1");
+    const [threshold, setThreshold] = useState<string>("0.20");
+    const [redteamJudge, setRedteamJudge] = useState("gpt-4o-mini");
 
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [message, setMessage] = useState("");
@@ -57,24 +66,37 @@ export default function RunnerPage() {
                 throw new Error("Invalid Body JSON");
             }
 
-            const payload = {
-                api_contract: {
-                    url,
-                    method,
-                    headers: parsedHeaders,
-                    body: parsedBody,
-                    extractors: {
-                        answer: extractAnswer,
-                        chunks: extractChunks
-                    },
-                    metrics: Object.keys(metrics).filter(k => metrics[k as keyof typeof metrics])
-                },
-                dataset_path: datasetPath,
-                judge,
-                limit: limit ? parseInt(limit) : undefined
+            // Формируем API контракт (общий для обеих вкладок)
+            const apiContract = {
+                url,
+                method,
+                headers: parsedHeaders,
+                body: parsedBody,
+                extractors: {
+                    answer: extractAnswer,
+                    chunks: extractChunks
+                }
             };
 
-            const response = await fetch("/api/runner", {
+            let endpoint = "";
+            let payload: any = { api_contract: apiContract };
+
+            if (activeTab === "eval") {
+                // Evaluate RAG
+                endpoint = "/api/runner";
+                payload.dataset_path = datasetPath;
+                payload.judge = evalJudge;
+                payload.limit = limit ? parseInt(limit) : undefined;
+                payload.api_contract.metrics = Object.keys(metrics).filter(k => metrics[k as keyof typeof metrics]);
+            } else {
+                // Red Teaming
+                endpoint = "/api/runner/redteam";
+                payload.judge = redteamJudge;
+                payload.attacks_per_vulnerability = attacksPerVuln ? parseInt(attacksPerVuln) : 1;
+                payload.threshold = threshold ? parseFloat(threshold) : 0.20;
+            }
+
+            const response = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -86,9 +108,8 @@ export default function RunnerPage() {
             }
 
             setStatus("success");
-            setMessage("Pipeline started successfully in the background. Job ID: " + data.job_id);
-            
-            // Redirect or show toast
+            setMessage(`${activeTab === "eval" ? "RAG Evaluation" : "Red Team"} Pipeline started successfully. Job ID: ${data.job_id}`);
+
         } catch (e: any) {
             setStatus("error");
             setMessage(e.message);
@@ -107,11 +128,11 @@ export default function RunnerPage() {
                     <Activity className="w-8 h-8 text-cyan-400" />
                     API Runner
                 </h1>
-                <p className="text-white/60 mt-2 text-lg font-medium">Динамическая оценка RAG-эндопоинтов и API-контрактов</p>
+                <p className="text-white/60 mt-2 text-lg font-medium">Унифицированный запуск RAG Evaluation и Red Teaming через API контракт</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left Column - Form */}
+                {/* Left Column - API Contract (общие поля) */}
                 <div className="lg:col-span-8 space-y-6">
                     
                     <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative">
@@ -208,69 +229,128 @@ export default function RunnerPage() {
                     </Card>
                 </div>
 
-                {/* Right Column - Execution Config */}
+                {/* Right Column - Tabs with specific settings */}
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="bg-gradient-to-b from-purple-900/20 to-slate-900/40 border border-purple-500/20 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative">
                         <CardHeader>
-                            <CardTitle className="text-xl font-bold tracking-tight text-white/90 drop-shadow-md z-10">Настройки прогона</CardTitle>
+                            <CardTitle className="text-xl font-bold tracking-tight text-white/90 drop-shadow-md z-10">Режим работы</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6 z-10 relative">
-                            <div>
-                                <label className={labelClasses}><Database className="w-4 h-4 text-emerald-400" /> Выбор датасета</label>
-                                <Select value={datasetPath} onValueChange={setDatasetPath}>
-                                    <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white h-10 w-full focus:ring-purple-500/50 text-sm">
-                                        <SelectValue placeholder="Загрузка..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-white/10 text-white">
-                                        {datasets.map(d => (
-                                            <SelectItem key={d.path} value={d.path}>{d.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <Tabs value={activeTab} onValueChange={setActiveTab}>
+                                <TabsList className="w-full bg-slate-950/50 border border-white/10">
+                                    <TabsTrigger value="eval" className="flex-1 gap-2">
+                                        <BarChart3 className="w-4 h-4" />
+                                        Evaluate RAG
+                                    </TabsTrigger>
+                                    <TabsTrigger value="redteam" className="flex-1 gap-2">
+                                        <Shield className="w-4 h-4" />
+                                        Red Teaming
+                                    </TabsTrigger>
+                                </TabsList>
 
-                            <div>
-                                <label className={labelClasses}>ID Модели-судьи (Judge Target)</label>
-                                <input 
-                                    type="text" 
-                                    className={inputClasses} 
-                                    value={judge} 
-                                    onChange={e => setJudge(e.target.value)}
-                                    placeholder="gpt4o-mini-or"
-                                />
-                                <p className="text-[11px] text-white/40 mt-1">Определено в eval/config/targets.yaml</p>
-                            </div>
+                                {/* Evaluate RAG Settings */}
+                                <TabsContent value="eval" className="space-y-6 mt-6">
+                                    <div>
+                                        <label className={labelClasses}><Database className="w-4 h-4 text-emerald-400" /> Выбор датасета</label>
+                                        <Select value={datasetPath} onValueChange={setDatasetPath}>
+                                            <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white h-10 w-full focus:ring-purple-500/50 text-sm">
+                                                <SelectValue placeholder="Загрузка..." />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-slate-900 border-white/10 text-white">
+                                                {datasets.map(d => (
+                                                    <SelectItem key={d.path} value={d.path}>{d.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                            <div>
-                                <label className={labelClasses}>Ограничение (Limit)</label>
-                                <input 
-                                    type="number" 
-                                    className={inputClasses} 
-                                    value={limit} 
-                                    onChange={e => setLimit(e.target.value)}
-                                    placeholder="Например, 5 (оставить пустым для всего)"
-                                />
-                            </div>
+                                    <div>
+                                        <label className={labelClasses}>ID Модели-судьи (Judge Target)</label>
+                                        <input
+                                            type="text"
+                                            className={inputClasses}
+                                            value={evalJudge}
+                                            onChange={e => setEvalJudge(e.target.value)}
+                                            placeholder="gpt4o-mini-or"
+                                        />
+                                        <p className="text-[11px] text-white/40 mt-1">Определено в eval/config/targets.yaml</p>
+                                    </div>
 
-                            <div>
-                                <label className={labelClasses}>Что вычислять (Метрики)</label>
-                                <div className="grid grid-cols-2 gap-3 mt-2">
-                                    {(["AR", "FA", "CP", "CR"] as const).map(m => (
-                                        <label key={m} className="flex items-center gap-2 text-sm text-white/80 select-none cursor-pointer p-2 rounded-lg border border-white/5 bg-slate-950/30 hover:bg-slate-950/60 transition-colors">
-                                            <input 
-                                                type="checkbox" 
-                                                className="w-4 h-4 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
-                                                checked={metrics[m]} 
-                                                onChange={e => setMetrics({...metrics, [m]: e.target.checked})} 
-                                            />
-                                            <span className="font-medium">{m === "AR" ? "Answer Rel (AR)" : m === "FA" ? "Faithfulness (FA)" : m === "CP" ? "Ctx Precision (CP)" : "Ctx Recall (CR)"}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                                    <div>
+                                        <label className={labelClasses}>Ограничение (Limit)</label>
+                                        <input
+                                            type="number"
+                                            className={inputClasses}
+                                            value={limit}
+                                            onChange={e => setLimit(e.target.value)}
+                                            placeholder="Например, 5 (оставить пустым для всего)"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Что вычислять (Метрики)</label>
+                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                            {(["AR", "FA", "CP", "CR"] as const).map(m => (
+                                                <label key={m} className="flex items-center gap-2 text-sm text-white/80 select-none cursor-pointer p-2 rounded-lg border border-white/5 bg-slate-950/30 hover:bg-slate-950/60 transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
+                                                        checked={metrics[m]}
+                                                        onChange={e => setMetrics({...metrics, [m]: e.target.checked})}
+                                                    />
+                                                    <span className="font-medium">{m === "AR" ? "Answer Rel (AR)" : m === "FA" ? "Faithfulness (FA)" : m === "CP" ? "Ctx Precision (CP)" : "Ctx Recall (CR)"}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                {/* Red Teaming Settings */}
+                                <TabsContent value="redteam" className="space-y-6 mt-6">
+                                    <div>
+                                        <label className={labelClasses}>ID Модели-судьи (Judge Preset)</label>
+                                        <input
+                                            type="text"
+                                            className={inputClasses}
+                                            value={redteamJudge}
+                                            onChange={e => setRedteamJudge(e.target.value)}
+                                            placeholder="gpt-4o-mini"
+                                        />
+                                        <p className="text-[11px] text-white/40 mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Атак на тип уязвимости (Attacks per Vuln)</label>
+                                        <input
+                                            type="number"
+                                            className={inputClasses}
+                                            value={attacksPerVuln}
+                                            onChange={e => setAttacksPerVuln(e.target.value)}
+                                            placeholder="1"
+                                            min="1"
+                                        />
+                                        <p className="text-[11px] text-white/40 mt-1">Количество симуляций атак на каждую уязвимость</p>
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Порог успеха атаки (ASR Threshold)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className={inputClasses}
+                                            value={threshold}
+                                            onChange={e => setThreshold(e.target.value)}
+                                            placeholder="0.20"
+                                            min="0"
+                                            max="1"
+                                        />
+                                        <p className="text-[11px] text-white/40 mt-1">Attack Success Rate выше порога = FAIL</p>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
 
                             <div className="pt-4 border-t border-white/10">
-                                <button 
+                                <button
                                     onClick={handleRun}
                                     disabled={status === 'loading'}
                                     className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
@@ -280,7 +360,7 @@ export default function RunnerPage() {
                                     ) : (
                                         <Play className="w-5 h-5" />
                                     )}
-                                    Запустить Pipeline
+                                    {activeTab === "eval" ? "Запустить Evaluation" : "Запустить Red Team"}
                                 </button>
                             </div>
 
@@ -294,7 +374,7 @@ export default function RunnerPage() {
                                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
                                     {message}
                                     <div className="mt-2 flex items-center gap-1 text-emerald-300 text-xs">
-                                        <ExternalLink className="w-3 h-3" /> Перейдите на страницу <a href="/eval" className="underline pl-1 bold hover:text-white">RAG Quality</a> через пару минут, чтобы увидеть результаты.
+                                        <ExternalLink className="w-3 h-3" /> Проверьте логи или страницу результатов через пару минут
                                     </div>
                                 </div>
                             )}
