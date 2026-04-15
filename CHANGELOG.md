@@ -11,6 +11,8 @@
       - **Red Teaming**: Тестирование безопасности LLM с настройкой количества атак и порога успеха (ASR Threshold)
     - Реализована единая форма "API Contract" для обоих режимов: поддержка кастомного URL, Method, Headers и тела запроса с шорткодами (`{{user_query}}`, `{{category}}`).
     - Умные Extractors для парсинга ответов API по вложенным путям (напр. `data.answer`, `retrieved_chunks`).
+    - **Drag & Drop загрузка датасетов**: Добавлен компонент для загрузки CSV/JSONL файлов через drag & drop с валидацией и preview
+    - **Улучшенная визуальная иерархия**: Увеличены отступы, размеры шрифтов и spacing для более комфортного восприятия
 - **Python Backend Integration**
     - В `run_eval.py` добавлена флаговая опция CLI `--dynamic-api-config` для RAG Evaluation через API контракт.
     - В `run_redteam.py` добавлена поддержка `--dynamic-api-config` для Red Teaming атак через HTTP callback.

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Play, Activity, Database, Braces, Link2, ExternalLink, Loader2, Key, Shield, BarChart3 } from "lucide-react";
+import DatasetUpload from "@/components/DatasetUpload";
 
 export default function RunnerPage() {
     const [activeTab, setActiveTab] = useState<string>("eval");
@@ -38,14 +39,23 @@ export default function RunnerPage() {
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [message, setMessage] = useState("");
 
-    useEffect(() => {
+    const loadDatasets = () => {
         fetch("/api/datasets").then(res => res.json()).then(data => {
             if (data.datasets && data.datasets.length > 0) {
                 setDatasets(data.datasets);
                 setDatasetPath(data.datasets[0].path);
             }
         });
+    };
+
+    useEffect(() => {
+        loadDatasets();
     }, []);
+
+    const handleUploadSuccess = (filePath: string) => {
+        loadDatasets(); // Перезагружаем список датасетов
+        setDatasetPath(filePath); // Автоматически выбираем новозагруженный датасет
+    };
 
     const handleRun = async () => {
         try {
@@ -116,41 +126,43 @@ export default function RunnerPage() {
         }
     };
 
-    const inputClasses = "flex h-10 w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all";
-    const textareaClasses = "flex w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all font-mono min-h-[120px]";
+    const inputClasses = "flex h-9 w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all";
+    const textareaClasses = "flex w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all font-mono min-h-[100px] resize-none";
     const labelClasses = "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block flex items-center gap-2";
 
     return (
-        <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3">
-                    <Activity className="w-8 h-8 text-cyan-400" />
+                <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3">
+                    <Activity className="w-7 h-7 text-cyan-400" />
                     API Runner
                 </h1>
-                <p className="text-white/60 mt-2 text-lg font-medium">Унифицированный запуск RAG Evaluation и Red Teaming через API контракт</p>
+                <p className="text-white/60 mt-2 text-base font-medium">Унифицированный запуск RAG Evaluation и Red Teaming через API контракт</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Left Column - API Contract (общие поля) */}
-                <div className="lg:col-span-8 space-y-6">
-                    
-                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative">
+                <div className="lg:col-span-8 space-y-5">
+
+                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Link2 className="w-32 h-32 text-cyan-500" />
+                            <Link2 className="w-24 h-24 text-cyan-500" />
                         </div>
-                        <CardHeader>
-                            <CardTitle className="text-xl font-bold tracking-tight text-white/90 drop-shadow-md flex justify-between items-center z-10">
-                                <span>Конфигурация запроса (API Contract)</span>
-                                <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30">Network</Badge>
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md flex justify-between items-center z-10">
+                                <span className="flex items-center gap-2">
+                                    Конфигурация запроса
+                                </span>
+                                <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 px-2 py-0.5 text-xs">Network</Badge>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6 z-10 relative">
+                        <CardContent className="space-y-4 z-10 relative">
                             <div className="flex gap-4">
-                                <div className="w-32">
+                                <div className="w-28">
                                     <label className={labelClasses}>Method</label>
-                                    <Select value={method} onValueChange={setMethod}>
-                                        <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white font-bold h-10 w-full focus:ring-purple-500/50">
+                                    <Select value={method} onValueChange={(v) => v && setMethod(v)}>
+                                        <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white font-bold h-9 w-full focus:ring-purple-500/50 rounded-md">
                                             <SelectValue placeholder="Method" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-900 border-white/10 text-white font-bold">
@@ -161,17 +173,17 @@ export default function RunnerPage() {
                                 </div>
                                 <div className="flex-1">
                                     <label className={labelClasses}>Эндпоинт (URL)</label>
-                                    <input 
-                                        type="text" 
-                                        className={inputClasses} 
-                                        value={url} 
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={url}
                                         onChange={e => setUrl(e.target.value)}
                                         placeholder="https://api.example.com/v1/rag"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClasses}><Key className="w-4 h-4 text-purple-400" /> Headers (JSON)</label>
                                     <textarea 
@@ -189,21 +201,23 @@ export default function RunnerPage() {
                                         onChange={e => setBodyStr(e.target.value)}
                                         spellCheck={false}
                                     />
-                                    <p className="text-[11px] text-white/40 mt-2">Доступные переменные: {`{{user_query}}`}, {`{{category}}`}</p>
+                                    <p className="text-xs text-white/40 mt-2">Доступные переменные: {`{{user_query}}`}, {`{{category}}`}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative">
-                        <CardHeader>
-                            <CardTitle className="text-xl font-bold tracking-tight text-white/90 drop-shadow-md z-10 flex justify-between items-center">
-                                <span>Маппинг ответа (Extractors)</span>
-                                <Badge variant="outline" className="bg-pink-500/10 text-pink-400 border-pink-500/30">Parsing</Badge>
+                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md z-10 flex justify-between items-center">
+                                <span className="flex items-center gap-2">
+                                    Маппинг ответа
+                                </span>
+                                <Badge variant="outline" className="bg-pink-500/10 text-pink-400 border-pink-500/30 px-2 py-0.5 text-xs">Parsing</Badge>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6 z-10 relative">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <CardContent className="space-y-4 z-10 relative">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClasses}>Путь до основного ответа (Answer Path)</label>
                                     <input 
@@ -230,38 +244,56 @@ export default function RunnerPage() {
                 </div>
 
                 {/* Right Column - Tabs with specific settings */}
-                <div className="lg:col-span-4 space-y-6">
-                    <Card className="bg-gradient-to-b from-purple-900/20 to-slate-900/40 border border-purple-500/20 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative">
-                        <CardHeader>
-                            <CardTitle className="text-xl font-bold tracking-tight text-white/90 drop-shadow-md z-10">Режим работы</CardTitle>
+                <div className="lg:col-span-4 space-y-5">
+                    <Card className="bg-gradient-to-b from-purple-900/20 to-slate-900/40 border border-purple-500/20 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md z-10 flex items-center gap-2">
+                                Режим работы
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6 z-10 relative">
+                        <CardContent className="space-y-5 z-10 relative">
                             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                <TabsList className="w-full bg-slate-950/50 border border-white/10">
-                                    <TabsTrigger value="eval" className="flex-1 gap-2">
-                                        <BarChart3 className="w-4 h-4" />
+                                <TabsList className="w-full bg-slate-950/50 border border-white/10 p-1 rounded-md">
+                                    <TabsTrigger value="eval" className="flex-1 gap-1.5 text-sm">
+                                        <BarChart3 className="w-3.5 h-3.5" />
                                         Evaluate RAG
                                     </TabsTrigger>
-                                    <TabsTrigger value="redteam" className="flex-1 gap-2">
-                                        <Shield className="w-4 h-4" />
+                                    <TabsTrigger value="redteam" className="flex-1 gap-1.5 text-sm">
+                                        <Shield className="w-3.5 h-3.5" />
                                         Red Teaming
                                     </TabsTrigger>
                                 </TabsList>
 
                                 {/* Evaluate RAG Settings */}
-                                <TabsContent value="eval" className="space-y-6 mt-6">
-                                    <div>
-                                        <label className={labelClasses}><Database className="w-4 h-4 text-emerald-400" /> Выбор датасета</label>
-                                        <Select value={datasetPath} onValueChange={setDatasetPath}>
-                                            <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white h-10 w-full focus:ring-purple-500/50 text-sm">
-                                                <SelectValue placeholder="Загрузка..." />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-slate-900 border-white/10 text-white">
-                                                {datasets.map(d => (
-                                                    <SelectItem key={d.path} value={d.path}>{d.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                <TabsContent value="eval" className="space-y-4 mt-4">
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className={labelClasses}><Database className="w-3.5 h-3.5 text-emerald-400" /> Загрузить новый датасет</label>
+                                            <DatasetUpload onUploadSuccess={handleUploadSuccess} />
+                                        </div>
+
+                                        <div className="relative py-1">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-white/10"></div>
+                                            </div>
+                                            <div className="relative flex justify-center text-xs">
+                                                <span className="bg-slate-900/80 px-3 py-1 text-white/40 rounded-full text-[10px]">или выберите существующий</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className={labelClasses}><Database className="w-3.5 h-3.5 text-emerald-400" /> Выбор датасета</label>
+                                            <Select value={datasetPath} onValueChange={(v) => v && setDatasetPath(v)}>
+                                                <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white h-9 w-full focus:ring-purple-500/50 text-sm rounded-md">
+                                                    <SelectValue placeholder="Загрузка..." />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-slate-900 border-white/10 text-white">
+                                                    {datasets.map(d => (
+                                                        <SelectItem key={d.path} value={d.path}>{d.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
 
                                     <div>
@@ -273,7 +305,7 @@ export default function RunnerPage() {
                                             onChange={e => setEvalJudge(e.target.value)}
                                             placeholder="gpt4o-mini-or"
                                         />
-                                        <p className="text-[11px] text-white/40 mt-1">Определено в eval/config/targets.yaml</p>
+                                        <p className="text-xs text-white/40 mt-1">Определено в eval/config/targets.yaml</p>
                                     </div>
 
                                     <div>
@@ -289,16 +321,16 @@ export default function RunnerPage() {
 
                                     <div>
                                         <label className={labelClasses}>Что вычислять (Метрики)</label>
-                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                        <div className="grid grid-cols-2 gap-2">
                                             {(["AR", "FA", "CP", "CR"] as const).map(m => (
-                                                <label key={m} className="flex items-center gap-2 text-sm text-white/80 select-none cursor-pointer p-2 rounded-lg border border-white/5 bg-slate-950/30 hover:bg-slate-950/60 transition-colors">
+                                                <label key={m} className="flex items-center gap-2 text-sm text-white/80 select-none cursor-pointer p-2 rounded-md border border-white/5 bg-slate-950/30 hover:bg-slate-950/60 hover:border-white/10 transition-all">
                                                     <input
                                                         type="checkbox"
-                                                        className="w-4 h-4 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
+                                                        className="w-3.5 h-3.5 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
                                                         checked={metrics[m]}
                                                         onChange={e => setMetrics({...metrics, [m]: e.target.checked})}
                                                     />
-                                                    <span className="font-medium">{m === "AR" ? "Answer Rel (AR)" : m === "FA" ? "Faithfulness (FA)" : m === "CP" ? "Ctx Precision (CP)" : "Ctx Recall (CR)"}</span>
+                                                    <span className="font-medium text-xs">{m === "AR" ? "Answer Rel" : m === "FA" ? "Faithfulness" : m === "CP" ? "Ctx Precision" : "Ctx Recall"}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -306,7 +338,7 @@ export default function RunnerPage() {
                                 </TabsContent>
 
                                 {/* Red Teaming Settings */}
-                                <TabsContent value="redteam" className="space-y-6 mt-6">
+                                <TabsContent value="redteam" className="space-y-4 mt-4">
                                     <div>
                                         <label className={labelClasses}>ID Модели-судьи (Judge Preset)</label>
                                         <input
@@ -316,7 +348,7 @@ export default function RunnerPage() {
                                             onChange={e => setRedteamJudge(e.target.value)}
                                             placeholder="gpt-4o-mini"
                                         />
-                                        <p className="text-[11px] text-white/40 mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
+                                        <p className="text-xs text-white/40 mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
                                     </div>
 
                                     <div>
@@ -329,7 +361,7 @@ export default function RunnerPage() {
                                             placeholder="1"
                                             min="1"
                                         />
-                                        <p className="text-[11px] text-white/40 mt-1">Количество симуляций атак на каждую уязвимость</p>
+                                        <p className="text-xs text-white/40 mt-1">Количество симуляций атак на каждую уязвимость</p>
                                     </div>
 
                                     <div>
@@ -344,7 +376,7 @@ export default function RunnerPage() {
                                             min="0"
                                             max="1"
                                         />
-                                        <p className="text-[11px] text-white/40 mt-1">Attack Success Rate выше порога = FAIL</p>
+                                        <p className="text-xs text-white/40 mt-1">Attack Success Rate выше порога = FAIL</p>
                                     </div>
                                 </TabsContent>
                             </Tabs>
@@ -353,12 +385,12 @@ export default function RunnerPage() {
                                 <button
                                     onClick={handleRun}
                                     disabled={status === 'loading'}
-                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
+                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
                                 >
                                     {status === 'loading' ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                        <Play className="w-5 h-5" />
+                                        <Play className="w-4 h-4" />
                                     )}
                                     {activeTab === "eval" ? "Запустить Evaluation" : "Запустить Red Team"}
                                 </button>
@@ -366,15 +398,16 @@ export default function RunnerPage() {
 
                             {status === "error" && (
                                 <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium">
-                                    Ошибка: {message}
+                                    <span className="font-bold">Ошибка:</span> {message}
                                 </div>
                             )}
 
                             {status === "success" && (
-                                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
-                                    {message}
-                                    <div className="mt-2 flex items-center gap-1 text-emerald-300 text-xs">
-                                        <ExternalLink className="w-3 h-3" /> Проверьте логи или страницу результатов через пару минут
+                                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium space-y-1">
+                                    <p>{message}</p>
+                                    <div className="flex items-center gap-1.5 text-emerald-300 text-xs">
+                                        <ExternalLink className="w-3 h-3" />
+                                        <span>Проверьте логи или страницу результатов через пару минут</span>
                                     </div>
                                 </div>
                             )}

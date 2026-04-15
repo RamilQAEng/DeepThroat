@@ -34,11 +34,11 @@ export default function RootLayout({
         <header className="border-b border-white/5 bg-slate-950/40 backdrop-blur-xl sticky top-0 z-50">
            <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
               <div className="flex items-center gap-8">
-                 <span className="font-extrabold text-2xl tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                    DeepThroath<span className="text-purple-500">_</span>
-                 </span>
+                 <a href="/" className="font-extrabold text-2xl tracking-tighter bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
+                    DeepThroath
+                 </a>
                  <nav className="flex items-center gap-3">
-                    <a href="/" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">🛡️ Red Teaming</a>
+                    <a href="/redteam" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">🛡️ Red Teaming</a>
                     <a href="/eval" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-white/10 border border-transparent hover:border-white/20 transition-all drop-shadow-sm">📊 Evaluate RAG</a>
                     <a href="/runner" className="text-base font-semibold text-white/90 hover:text-white px-4 py-2.5 rounded-lg hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-500/20 border border-transparent hover:border-cyan-500/30 transition-all drop-shadow-sm">🚀 API Runner</a>
                  </nav>
