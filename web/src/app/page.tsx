@@ -2,7 +2,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] space-y-8">
       <div className="text-center space-y-4 max-w-3xl">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
+        <h1 suppressHydrationWarning className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
           DeepThroath
         </h1>
         <p className="text-lg text-white/80 leading-relaxed">
@@ -25,7 +25,7 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">
+            <h3 suppressHydrationWarning className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">
               Red Teaming
             </h3>
             <p className="text-sm text-white/60 leading-relaxed">
@@ -50,7 +50,7 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+            <h3 suppressHydrationWarning className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
               Evaluate RAG
             </h3>
             <p className="text-sm text-white/60 leading-relaxed">
@@ -75,7 +75,7 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
+            <h3 suppressHydrationWarning className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
               API Runner
             </h3>
             <p className="text-sm text-white/60 leading-relaxed">

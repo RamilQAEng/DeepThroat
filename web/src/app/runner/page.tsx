@@ -133,7 +133,7 @@ export default function RunnerPage() {
         <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3">
+                <h1 suppressHydrationWarning className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3">
                     <Activity className="w-7 h-7 text-cyan-400" />
                     API Runner
                 </h1>

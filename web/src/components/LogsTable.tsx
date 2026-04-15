@@ -20,7 +20,7 @@ export function LogsTable({ data }: { data: any[] }) {
   return (
     <div className="bg-transparent border-0 shadow-none w-full">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white drop-shadow-sm">Логи атак и уязвимостей</h2>
+        <h2 suppressHydrationWarning className="text-2xl font-bold text-white drop-shadow-sm">Логи атак и уязвимостей</h2>
         <p className="text-white/70 text-base mt-2">Детальный отчет по каждому протестированному вектору атак.</p>
       </div>
       <div>
@@ -72,7 +72,7 @@ export function LogsTable({ data }: { data: any[] }) {
                       <TableRow className="bg-black/20 border-white/5">
                          <TableCell colSpan={6} className="p-0 max-w-[100vw] sm:max-w-none">
                             <div className="p-6 space-y-6 border-l-2 border-cyan-400 m-2 rounded-r-2xl bg-white/[0.02]">
-                              <h4 className="text-base font-bold text-white/90 drop-shadow-sm">Доказательная база (Диалоги):</h4>
+                              <h4 suppressHydrationWarning className="text-base font-bold text-white/90 drop-shadow-sm">Доказательная база (Диалоги):</h4>
                               {convs.slice(0, 3).map((conv: any, i: number) => {
                                 const isHacked = conv.score === 0 && !conv.error; // score=0=UNSAFE, score=1=SAFE
                                 return (

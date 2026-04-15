@@ -110,7 +110,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white">
         <div className="animate-pulse flex flex-col items-center">
           <ShieldAlert className="w-16 h-16 mb-4 text-emerald-500 animate-bounce" />
-          <h2 className="text-2xl font-bold tracking-tight">Загрузка аналитики...</h2>
+          <h2 suppressHydrationWarning className="text-2xl font-bold tracking-tight">Загрузка аналитики...</h2>
         </div>
       </div>
     );
@@ -127,7 +127,7 @@ export default function Dashboard() {
              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                  <Zap className="w-10 h-10 text-emerald-400" />
              </div>
-             <h2 className="text-3xl font-extrabold tracking-tight mb-4 drop-shadow-sm">Добро пожаловать в DeepThroath</h2>
+             <h2 suppressHydrationWarning className="text-3xl font-extrabold tracking-tight mb-4 drop-shadow-sm">Добро пожаловать в DeepThroath</h2>
              <p className="text-white/60 text-lg mb-8 leading-relaxed">
                Кажется, у вас еще нет завершенных прогонов Red Teaming.<br/>Запустите тестирование атак, чтобы увидеть аналитику безопасности.
              </p>
@@ -147,7 +147,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-sm">
+            <h1 suppressHydrationWarning className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-sm">
               DeepThroath
             </h1>
             <p className="text-white/80 mt-3 text-lg font-medium">Аналитика безопасности LLM</p>

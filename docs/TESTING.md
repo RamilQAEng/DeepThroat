@@ -48,7 +48,7 @@ Tests the runner without making real API calls. The Anthropic client and DeepTea
 | `test_anthropic_callback_calls_api` | Callback invokes `messages.create` once |
 | `test_run_red_team_returns_risk_assessment` | Async runner returns mocked RiskAssessment |
 
-### `tests/test_charts.py` — Dashboard Charts (5 тестов)
+### `tests/test_charts.py` — Red Team Dashboard Charts (5 тестов)
 
 Tests that Plotly figures are generated without errors from sample DataFrame fixtures.
 
@@ -59,6 +59,43 @@ Tests that Plotly figures are generated without errors from sample DataFrame fix
 | `test_passrate_trend_empty_df` | Handles empty history gracefully |
 | `test_passrate_trend_with_data` | Trend renders with data |
 | `test_severity_heatmap_not_empty` | Heatmap returns a Figure |
+
+### `tests/test_quality_charts.py` — Quality Eval Charts (13 тестов)
+
+Tests Plotly figures for RAG quality evaluation metrics.
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_ar_by_category_bar_not_empty` | Bar chart returns non-empty figure |
+| `test_ar_by_category_bar_empty_df` | Handles empty DataFrame gracefully |
+| `test_ar_by_category_bar_no_category_column` | Handles missing category column |
+| `test_ar_by_category_bar_categories_in_data` | Categories appear in chart data |
+| `test_ar_distribution_histogram` | Histogram renders with data |
+| `test_ar_distribution_histogram_with_category` | Category-colored histogram works |
+| `test_ar_distribution_histogram_empty_df` | Empty df → empty figure, no crash |
+| `test_quality_trend_line_empty` | Empty runs → empty figure |
+| `test_quality_trend_line_with_data` | Trend renders multiple data points |
+| `test_quality_trend_line_single_run` | Single run renders without crash |
+| `test_faithfulness_vs_relevancy_scatter` | Scatter plot renders with both columns |
+| `test_faithfulness_vs_relevancy_scatter_no_faithfulness` | Graceful fallback without faithfulness col |
+| `test_faithfulness_vs_relevancy_scatter_empty_df` | Empty df → empty figure |
+
+### `tests/test_eval_storage.py` — Eval Storage (10 тестов)
+
+Tests the `eval_storage.py` reader for RAG quality evaluation results.
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_list_eval_runs_empty_when_no_dir` | Returns [] when eval results dir missing |
+| `test_list_eval_runs_returns_entries` | Reads real metrics.json entries |
+| `test_list_eval_runs_newest_first` | Results sorted newest-first |
+| `test_load_eval_run_returns_dataframe` | Returns DataFrame from metrics.json |
+| `test_load_eval_run_empty_json` | Empty JSON → empty DataFrame |
+| `test_quality_score_empty_returns_zero` | Empty df → score 0 |
+| `test_quality_score_none_returns_zero` | None → score 0 |
+| `test_quality_score_calculation` | Weighted score math is correct |
+| `test_quality_score_all_passed` | All perfect → score 100 |
+| `test_quality_score_missing_column` | Missing column handled gracefully |
 
 ### `tests/test_storage.py` — Storage Layer (12 тестов)
 
@@ -94,10 +131,10 @@ Tests vulnerability→OWASP category resolution, type suffix stripping, fallback
 | `test_excessive_agency_subtype` | `ExcessiveAgencyType.PERMISSIONS` → LLM06, Critical |
 | `test_unknown_vulnerability_returns_fallback` | Unknown → LLM09, Medium |
 | `test_unknown_subtype_returns_fallback` | `UnknownType.SUBTYPE` → LLM09 |
-| `test_critical_severities` | 11 critical types are CRITICAL |
+| `test_critical_severities` | Critical types are CRITICAL |
 | `test_bias_subtype_medium` | All `BiasType.*` subtypes are MEDIUM |
 
-### `tests/test_generator.py` — Report Generator (11 тестов)
+### `tests/test_generator.py` — Report Generator (13 тестов)
 
 Tests security score calculation and report context building.
 
@@ -135,8 +172,7 @@ Tests YAML loading, target lookup, Pydantic attack config validation, and exit c
 
 ### `tests/test_pdf_export.py` — PDF / Markdown Export (17 тестов)
 
-Tests Jinja2 template rendering for HTML (used internally for PDF) and Markdown export.
-WeasyPrint integration is mocked.
+Tests Jinja2 template rendering for HTML and Markdown export. WeasyPrint integration is mocked.
 
 | Test | What it verifies |
 |------|-----------------|
@@ -178,6 +214,25 @@ Tests pure-Python logic from `app.py` in isolation (without Streamlit).
 | `test_comparison_unchanged` | delta ≈ 0 → "без изменений" |
 | `test_comparison_new_in_b` | Present only in B → "новый тест" |
 | `test_comparison_missing_in_b` | Present only in A → "отсутствует в B" |
+
+---
+
+## Test Coverage Summary
+
+| Suite | File | Tests |
+|-------|------|-------|
+| Red Team Engine | test_runner.py | 3 |
+| Data Transformer | test_transformer.py | 5 |
+| Storage | test_storage.py | 12 |
+| Eval Storage | test_eval_storage.py | 10 |
+| OWASP Registry | test_severity.py | 11 |
+| Report Generator | test_generator.py | 13 |
+| PDF / Markdown Export | test_pdf_export.py | 17 |
+| Red Team Charts | test_charts.py | 5 |
+| Quality Eval Charts | test_quality_charts.py | 13 |
+| CLI Validation | test_cli.py | 9 |
+| Dashboard Logic | test_app_logic.py | 14 |
+| **Total** | | **~112** |
 
 ---
 
@@ -249,14 +304,14 @@ pd.DataFrame([
 
 ## CI Test Execution
 
-Tests run automatically in GitHub Actions on every push and PR:
+Tests run automatically in GitHub Actions on every push and PR (when workflow triggers are enabled):
 
 ```yaml
 - run: pip install -r requirements.txt
 - run: pytest tests/ -v
 ```
 
-A failing test blocks the merge.
+Note: The red team scan workflow (`.github/workflows/redteam.yml`) is currently set to `workflow_dispatch` only — tests still run in standard CI on every push.
 
 ---
 
@@ -268,7 +323,8 @@ The following require real credentials or system libraries:
 - Real Anthropic / OpenRouter API responses
 - PDF export via WeasyPrint (requires `brew install pango gdk-pixbuf`)
 - Streamlit UI rendering (`st.*` widgets — no headless browser support)
-- Markdown report visual appearance (rendered output is structurally tested)
+- Next.js web frontend rendering (no frontend test suite yet)
+- RAG eval run with real embeddings (requires configured dataset + API keys)
 
 These are validated manually or in dedicated integration test runs with real credentials.
 

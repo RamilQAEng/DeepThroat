@@ -2,30 +2,35 @@
 
 ## Overview
 
-DeepThroath is a five-layer analytics platform for automated LLM security testing. Each layer has a single responsibility and communicates through typed interfaces.
+DeepThroath is a six-layer analytics platform for automated LLM security testing and RAG quality evaluation. Each layer has a single responsibility and communicates through typed interfaces.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Layer 5 — Report Generation  (src/reports/)            │
-│  Jinja2 HTML + WeasyPrint PDF + Security Score          │
-├─────────────────────────────────────────────────────────┤
-│  Layer 4 — Dashboard (src/dashboard/)                   │
-│  Streamlit + Plotly: KPI, charts, OWASP expanders, PDF  │
-├─────────────────────────────────────────────────────────┤
-│  Layer 3 — Data (src/data/)                             │
-│  Transformer + Parquet storage + history versioning     │
-├─────────────────────────────────────────────────────────┤
-│  Layer 2 — Red Team (src/red_team/)                     │
-│  DeepTeam runner, async callbacks, OWASP registry       │
-├─────────────────────────────────────────────────────────┤
-│  Layer 1 — Target LLM (Anthropic / OpenRouter / any)   │
-│  Model under test + LLM-as-a-Judge (same or different)  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 6 — Web Frontend  (web/)                             │
+│  Next.js 15 + ShadCN UI: dashboard, runner, eval pages      │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 5 — Report Generation  (src/reports/)                │
+│  Jinja2 HTML + WeasyPrint PDF + Markdown + Security Score   │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 4 — Dashboard (src/dashboard/)                       │
+│  Streamlit: unified_app.py — Red Team + Quality Eval tabs   │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 3 — Data (src/data/)                                 │
+│  Transformer + Parquet storage + Eval results reader        │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 2 — Red Team (src/red_team/)                         │
+│  DeepTeam runner, async callbacks, OWASP registry           │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 1 — Target LLM (Anthropic / OpenRouter / any)        │
+│  Model under test + LLM-as-a-Judge (same or different)      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Data Flow
+
+### Red Team Flow
 
 ```
 config/targets.yaml
@@ -57,18 +62,48 @@ src/data/storage.py
                                 ← results/history/{ts}.parquet
         │
         ▼
-src/dashboard/app.py            ← streamlit run src/dashboard/app.py
-  load_latest() + load_history()
-  charts: pie, bar, trend, heatmap (Plotly, локализация RU)
+src/dashboard/unified_app.py    ← streamlit run src/dashboard/unified_app.py
+  Red Team tab: load_latest() + load_history()
+  charts: pie, bar, trend, heatmap (Plotly)
   OWASP expanders with remediation steps
-  PDF/HTML export button
+  PDF/HTML/Markdown export button
         │
         ▼
 src/reports/generator.py
   build_report_context()        ← Security Score, top vulns, evidence dialogs
 src/reports/pdf_export.py
   render_html_report()          ← Jinja2 → HTML
+  render_markdown_report()      ← Jinja2 → Markdown
   export_pdf()                  ← HTML → PDF via WeasyPrint
+```
+
+### Quality Evaluation Flow
+
+```
+eval/config/eval_config.yaml
+eval/datasets/
+        │
+        ▼
+eval/scripts/run_eval.py        ← RAG quality eval runner
+        │
+        ▼  deepeval metrics (AnswerRelevancy, Faithfulness, ...)
+eval/results/{timestamp}/
+  metrics.json
+  report.md
+        │
+        ▼
+src/data/eval_storage.py
+  list_eval_runs()              ← reads eval/results/
+  load_latest_eval()
+  quality_score()               ← weighted quality score 0–100
+        │
+        ▼
+src/dashboard/unified_app.py    ← Quality Eval tab
+src/dashboard/quality_charts.py
+  ar_by_category_bar()
+  ar_distribution_histogram()
+  faithfulness_vs_relevancy_scatter()
+  quality_trend_line()
 ```
 
 ---
@@ -83,10 +118,10 @@ class Severity(str, Enum): CRITICAL | HIGH | MEDIUM | LOW
 @dataclass(frozen=True)
 class OWASPCategory:
     id: str           # LLM01..LLM10
-    name: str         # локализованное название (RU)
+    name: str
     severity: Severity
-    description: str  # описание риска (RU)
-    remediation: str  # шаги исправления (RU)
+    description: str
+    remediation: str
 
 OWASP_REGISTRY: dict[str, OWASPCategory]
 # Keys: deepteam vulnerability class names (PromptLeakage, Toxicity, ...)
@@ -95,6 +130,7 @@ OWASP_REGISTRY: dict[str, OWASPCategory]
 SEVERITY_WEIGHTS: dict[str, float]  # Critical=0.40, High=0.30, Medium=0.20, Low=0.10
 SEVERITY_COLORS: dict[str, str]     # CSS hex colors per severity
 SEVERITY_BADGE: dict[str, str]      # emoji badges per severity
+SEVERITY_ORDER: list[str]           # ordered list for display
 
 def get_owasp_category(vulnerability_name: str) -> OWASPCategory
 # Handles composite names like "ToxicityType.PROFANITY" → "Toxicity"
@@ -180,6 +216,7 @@ JUDGE_PRESETS: dict[str, dict] = {
 
 def build_judge(provider, model, api_key, ollama_url) -> DeepEvalBaseLLM | None
 def build_judge_from_preset(preset: str) -> DeepEvalBaseLLM | None
+def register_custom_presets(presets: dict) -> None  # from YAML judge_custom_presets:
 ```
 
 ### `src/data/transformer.py`
@@ -199,7 +236,7 @@ def transform_risk_assessment(
 |--------|------|-------------|
 | `vulnerability` | str | deepteam class name (e.g. "PromptLeakage") |
 | `owasp_id` | str | LLM01–LLM10 |
-| `owasp_name` | str | Human-readable category (RU) |
+| `owasp_name` | str | Human-readable category |
 | `severity` | str | Critical / High / Medium / Low |
 | `pass_rate` | float | 0.0–1.0 |
 | `asr` | float | 1 – pass_rate |
@@ -220,6 +257,27 @@ def transform_risk_assessment(
 def save_results(df: pd.DataFrame) -> Path
 def load_latest() -> pd.DataFrame | None
 def load_history() -> pd.DataFrame          # all scans concatenated
+def list_scan_files() -> list[dict]         # metadata list for scan selector
+```
+
+### `src/data/eval_storage.py`
+
+```python
+EVAL_RESULTS_DIR = Path(os.getenv("EVAL_RESULTS_DIR", "eval/results"))
+
+def list_eval_runs() -> list[dict]          # metadata list, newest first
+def load_eval_run(metrics_file: Path) -> pd.DataFrame
+def load_latest_eval() -> pd.DataFrame | None
+def quality_score(df: pd.DataFrame) -> float  # 0–100 weighted quality score
+```
+
+### `src/dashboard/quality_charts.py`
+
+```python
+def ar_by_category_bar(df: pd.DataFrame) -> Figure
+def ar_distribution_histogram(df: pd.DataFrame) -> Figure
+def faithfulness_vs_relevancy_scatter(df: pd.DataFrame) -> Figure
+def quality_trend_line(runs: list[dict]) -> Figure
 ```
 
 ### `src/reports/generator.py`
@@ -231,6 +289,14 @@ def build_report_context(
     history_df: pd.DataFrame,
     client_name: str = "Client"
 ) -> dict[str, Any]
+```
+
+### `src/reports/pdf_export.py`
+
+```python
+def render_html_report(context: dict) -> str   # Jinja2 → HTML string
+def render_markdown_report(context: dict) -> str  # Jinja2 → Markdown string
+def export_pdf(html: str, output_path: Path) -> Path  # WeasyPrint → PDF
 ```
 
 ---
@@ -247,8 +313,11 @@ where weight = { Critical: 0.40, High: 0.30, Medium: 0.20, Low: 0.10 }
 
 ## Key Design Decisions
 
+### Unified Dashboard
+`unified_app.py` is the main Streamlit entrypoint. It combines the red team dashboard (`app.py` logic) and the quality evaluation dashboard in a tabbed interface. `app.py` remains as a standalone red-team-only dashboard.
+
 ### Async Callbacks
-deepteam's `red_team()` runs in `async_mode=True` by default and wraps the `model_callback` via `get_async_model_callback`. The callback **must** be `async def` and use async HTTP clients (`AsyncAnthropic`, `AsyncOpenAI`). A sync callback causes `TypeError: object RTTurn can't be used in 'await' expression`.
+deepteam's `red_team()` wraps the `model_callback` via `get_async_model_callback`. The callback **must** be `async def` and use async HTTP clients (`AsyncAnthropic`, `AsyncOpenAI`). A sync callback causes `TypeError: object RTTurn can't be used in 'await' expression`.
 
 ### Simulator = Judge
 deepteam requires a `simulator_model` (generates attack prompts) and an `evaluation_model` (judges responses). Both default to `gpt-4o-mini` via `OPENAI_API_KEY`. We pass the same custom judge for both to avoid dependency on OpenAI keys.
@@ -266,7 +335,10 @@ deepteam 1.0.6 `RiskAssessment` has no `to_df()` method. Data is extracted by it
 Named target profiles: `default` (Claude Haiku), `qwen-7b`, `qwen-72b`, `qwen-custom`. Each has `provider`, `model`, and `system_prompt`.
 
 ### `config/attack_config.yaml`
-Controls `attacks_per_vulnerability_type`, `asr_threshold`, `judge_preset`, and lists of enabled attacks/vulnerabilities.
+Controls `attacks_per_vulnerability_type`, `asr_threshold`, `judge_preset`, `judge_custom_presets`, and lists of enabled attacks/vulnerabilities.
+
+### `eval/config/eval_config.yaml`
+Controls RAG quality evaluation: dataset path, top_k, metrics to run.
 
 ### Environment Variables
 
@@ -276,7 +348,9 @@ Controls `attacks_per_vulnerability_type`, `asr_threshold`, `judge_preset`, and 
 | `OPENROUTER_API_KEY` | For OpenRouter targets/judge | — | OpenRouter API key |
 | `OPENAI_API_KEY` | For OpenAI judge | — | OpenAI API key |
 | `ASR_THRESHOLD` | No | 0.20 | CI failure threshold |
-| `RESULTS_DIR` | No | ./results | Results output directory |
+| `RESULTS_DIR` | No | ./results | Red team results directory |
+| `EVAL_RESULTS_DIR` | No | ./eval/results | Quality eval results directory |
+| `OPENROUTER_BASE_URL` | No | https://openrouter.ai/api/v1 | OpenRouter API base URL |
 
 ---
 
@@ -292,15 +366,28 @@ scripts/run_redteam.py
         └── src/red_team/severity.py
   └── src/data/storage.py
 
-src/dashboard/app.py
+eval/scripts/run_eval.py
+  └── eval/eval_rag_metrics.py
+        └── deepeval (external, ==3.9.3)
+  └── eval/results/ → src/data/eval_storage.py
+
+src/dashboard/unified_app.py  ← MAIN DASHBOARD
   ├── src/data/storage.py
+  ├── src/data/eval_storage.py
   ├── src/dashboard/charts.py
   │     └── src/red_team/severity.py
+  ├── src/dashboard/quality_charts.py
   ├── src/dashboard/logs_table.py
   ├── src/reports/generator.py
   │     └── src/red_team/severity.py
   └── src/reports/pdf_export.py
         └── src/reports/templates/
+
+web/                            ← Next.js frontend
+  ├── src/app/api/runner/       ← proxies to scripts/run_redteam.py
+  ├── src/app/api/eval/         ← proxies to eval/scripts/run_eval.py
+  ├── src/app/api/data/         ← reads results/ parquet
+  └── src/components/           ← DashboardCharts, LogsTable, ComparisonTab, ...
 ```
 
 ---
@@ -311,14 +398,17 @@ All source files kept under 500 lines per CLAUDE.md constraints:
 
 | File | Lines |
 |------|-------|
-| severity.py | ~185 |
-| attacks.py | ~80 |
-| runner.py | ~135 |
-| judges.py | ~155 |
-| transformer.py | ~70 |
-| storage.py | ~50 |
-| generator.py | ~100 |
-| pdf_export.py | ~28 |
-| charts.py | ~87 |
-| logs_table.py | ~75 |
-| app.py | ~145 |
+| severity.py | 363 |
+| attacks.py | 88 |
+| runner.py | 236 |
+| judges.py | 173 |
+| transformer.py | 76 |
+| storage.py | 81 |
+| eval_storage.py | 76 |
+| generator.py | 136 |
+| pdf_export.py | 42 |
+| charts.py | 98 |
+| quality_charts.py | 173 |
+| logs_table.py | 115 |
+| app.py | 308 |
+| unified_app.py | 666 ⚠️ exceeds 500-line limit — refactor candidate |

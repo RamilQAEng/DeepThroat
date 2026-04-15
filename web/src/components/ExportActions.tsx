@@ -212,7 +212,7 @@ export function ExportActions({ data }: { data: any }) {
       ? `<p style="color:#16a34a">✅ Успешных атак не зафиксировано.</p>`
       : evidence.map(ev => `
         <div style="margin-bottom:24px;padding:16px;border:1px solid #e5e7eb;border-radius:8px;">
-          <h3 style="margin:0 0 12px;font-size:15px">${badgeHtml(ev.severity)} [${ev.owasp_id}] ${ev.vulnerability}</h3>
+          <h3 suppressHydrationWarning style="margin:0 0 12px;font-size:15px">${badgeHtml(ev.severity)} [${ev.owasp_id}] ${ev.vulnerability}</h3>
           <p style="font-size:12px;color:#6b7280;margin:0 0 6px">Метод атаки: ${ev.attack_type}</p>
           <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;margin-bottom:8px">
             <p style="font-size:11px;color:#6b7280;margin:0 0 4px">ВВОД АТАКУЮЩЕГО:</p>
@@ -229,7 +229,7 @@ export function ExportActions({ data }: { data: any }) {
       ? `<p style="color:#16a34a">✅ Рекомендации не требуются — все уязвимости отражены.</p>`
       : recommendations.map(rec => `
         <div style="margin-bottom:20px;padding:16px;border-left:4px solid ${severityColor[rec.severity]||'#6b7280'};background:${severityBg[rec.severity]||'#f9fafb'};border-radius:0 8px 8px 0">
-          <h3 style="margin:0 0 8px;font-size:14px">${badgeHtml(rec.severity)} ${rec.owasp_id} — ${rec.vulnerability}</h3>
+          <h3 suppressHydrationWarning style="margin:0 0 8px;font-size:14px">${badgeHtml(rec.severity)} ${rec.owasp_id} — ${rec.vulnerability}</h3>
           <p style="margin:0;font-size:13px;color:#374151">${rec.remediation}</p>
         </div>`).join("");
 
@@ -292,7 +292,7 @@ export function ExportActions({ data }: { data: any }) {
 </div>
 
 <div class="section">
-  <h2>1. Резюме для руководства</h2>
+  <h2 suppressHydrationWarning>1. Резюме для руководства</h2>
   <p style="margin-bottom:24px;font-size:14px;line-height:1.6;color:#374151">Данный отчёт содержит результаты автоматизированного тестирования (Red Teaming) языковой модели на соответствие стандартам безопасности <b>OWASP LLM Top 10</b>.</p>
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-num">${score}/100</div><div class="kpi-lbl">Индекс безопасности</div></div>
@@ -301,11 +301,11 @@ export function ExportActions({ data }: { data: any }) {
     <div class="kpi-card"><div class="kpi-num">${totalFailed}</div><div class="kpi-lbl">Найдено уязвимостей</div></div>
   </div>
   <p style="margin-bottom:16px">${statusText}</p>
-  ${topVulns.length > 0 ? `<div class="findings-box"><h3>Критические находки</h3><table><thead><tr><th>Уязвимость</th><th>OWASP</th><th>Критичность</th><th>ASR</th></tr></thead><tbody>${topVulnsRows}</tbody></table></div>` : ""}
+  ${topVulns.length > 0 ? `<div class="findings-box"><h3 suppressHydrationWarning>Критические находки</h3><table><thead><tr><th>Уязвимость</th><th>OWASP</th><th>Критичность</th><th>ASR</th></tr></thead><tbody>${topVulnsRows}</tbody></table></div>` : ""}
 </div>
 
 <div class="section">
-  <h2>2. Методология и метрики</h2>
+  <h2 suppressHydrationWarning>2. Методология и метрики</h2>
   <p style="margin-bottom:16px;font-size:14px;line-height:1.6;color:#374151">Тестирование проводилось методом имитации враждебных атак. Каждое взаимодействие оценивается независимой <b>моделью-судьёй (LLM-as-a-Judge)</b>.</p>
   <ul>
     <li><b>ASR (Attack Success Rate):</b> Процент атак, которые привели к небезопасному ответу модели. Чем ниже ASR, тем лучше защита.</li>
@@ -321,17 +321,17 @@ export function ExportActions({ data }: { data: any }) {
 </div>
 
 <div class="section">
-  <h2>3. Результаты по категориям OWASP</h2>
+  <h2 suppressHydrationWarning>3. Результаты по категориям OWASP</h2>
   <table><thead><tr><th>ID</th><th>Категория</th><th>Критичность</th><th>Защита</th><th>Взломы (ASR)</th></tr></thead><tbody>${owaspRows}</tbody></table>
 </div>
 
 <div class="section">
-  <h2>4. Примеры успешных атак (Evidence)</h2>
+  <h2 suppressHydrationWarning>4. Примеры успешных атак (Evidence)</h2>
   ${evidenceHtml}
 </div>
 
 <div class="section">
-  <h2>5. Рекомендации по устранению</h2>
+  <h2 suppressHydrationWarning>5. Рекомендации по устранению</h2>
   ${recsHtml}
 </div>
 

@@ -1,34 +1,45 @@
 # DeepThroath — LLM Red Teaming Analytics Platform
 
-## Текущий статус (2026-03-30)
+## Текущий статус (2026-04-16)
 
 **Платформа полностью реализована и готова к использованию.**
 
 | Этап | Статус | Описание |
 |------|--------|----------|
 | 1. Attack Integration | ✅ Готово | Async callbacks, DeepTeam 1.0.6, OpenRouter |
-| 2. Data Layer | ✅ Готово | Transformer (real RiskAssessment API), Parquet storage |
-| 3. Dashboard | ✅ Готово | Локализованный Streamlit UI, OWASP expanders, PDF export |
-| 4. CI/CD | 🔜 Запланировано | GitHub Actions workflow |
-| 5. Client Reports | ✅ Готово | PDF/HTML через Jinja2 + WeasyPrint |
+| 2. Data Layer | ✅ Готово | Transformer (real RiskAssessment API), Parquet storage, Eval Storage |
+| 3. Dashboard | ✅ Готово | Unified Streamlit UI (Red Team + Quality Eval), OWASP expanders, PDF/Markdown export |
+| 4. CI/CD | ✅ Готово (частично) | GitHub Actions workflow создан, manual-dispatch; auto-triggers — backlog |
+| 5. Client Reports | ✅ Готово | PDF/HTML/Markdown через Jinja2 + WeasyPrint |
+| 6. RAG Quality Eval | ✅ Готово | deepeval метрики, eval/ sub-system, quality charts |
+| 7. Web Frontend | ✅ Готово | Next.js приложение с runner, dashboard, eval страницами |
 
 ### Быстрый старт
 
 ```bash
 source .venv/bin/activate
 
-# Запустить сканирование
+# Запустить сканирование безопасности
 python scripts/run_redteam.py --target qwen-7b --judge gemini-flash
 
-# Открыть дашборд
-streamlit run src/dashboard/app.py
+# Запустить оценку качества (из директории eval/)
+cd eval && python scripts/run_eval.py
+
+# Открыть unified дашборд (Red Team + Quality Eval)
+streamlit run src/dashboard/unified_app.py
+
+# Или запустить web-интерфейс
+cd web && npm run dev
 ```
 
 ---
 
 ## Концепция
 
-Аналитическая платформа, объединяющая автоматизированное состязательное тестирование (Red Teaming) через DeepTeam на бэкенде с интерактивной визуализацией метрик безопасности на фронтенде (Streamlit).
+Аналитическая платформа, объединяющая:
+- Автоматизированное состязательное тестирование (Red Teaming) через DeepTeam
+- Оценку качества RAG-систем через deepeval
+- Интерактивную визуализацию метрик на фронтенде (Streamlit + Next.js)
 
 ---
 
@@ -40,6 +51,9 @@ streamlit run src/dashboard/app.py
 | **ASR** (Attack Success Rate) | % атак, взломавших модель | Чем ниже — тем лучше |
 | **pass_rate** | % тестов, которые модель выдержала | Чем выше — тем лучше |
 | **Security Score** | Взвешенная оценка 0–100 с учётом критичности | Чем выше — тем лучше |
+| **Quality Score** | Взвешенная оценка качества RAG 0–100 | Чем выше — тем лучше |
+| **Answer Relevancy** | Насколько ответ соответствует вопросу | 0.0–1.0 |
+| **Faithfulness** | Насколько ответ соответствует контексту | 0.0–1.0 |
 | **Severity (OWASP)** | Критичность по OWASP Top 10 LLM | Critical / High / Medium / Low |
 
 ### OWASP Top 10 LLM — Градация критичности
@@ -60,7 +74,7 @@ streamlit run src/dashboard/app.py
 ## Архитектура проекта
 
 ```
-RedTeaming DeepThroath/
+RedTeaming DeepThroath v2/
 ├── src/
 │   ├── red_team/
 │   │   ├── runner.py          # Async model_callback + run_red_team()
@@ -69,24 +83,44 @@ RedTeaming DeepThroath/
 │   │   └── severity.py        # OWASP registry + smart name matching
 │   ├── data/
 │   │   ├── transformer.py     # RiskAssessment → DataFrame
-│   │   └── storage.py         # Parquet read/write + история
+│   │   ├── storage.py         # Parquet read/write + история
+│   │   └── eval_storage.py    # Eval results JSON → DataFrame
 │   ├── dashboard/
-│   │   ├── app.py             # Streamlit (локализованный, RU)
+│   │   ├── unified_app.py     # Основной Streamlit (Red Team + Quality)
+│   │   ├── app.py             # Red-team-only дашборд
 │   │   ├── charts.py          # Plotly: pie, bar, trend, heatmap
+│   │   ├── quality_charts.py  # Plotly: AR bar, scatter, trend
 │   │   └── logs_table.py      # Таблица диалогов с фильтрами
 │   └── reports/
 │       ├── generator.py       # Security Score + контекст отчёта
-│       ├── pdf_export.py      # Jinja2 HTML → WeasyPrint PDF
-│       └── templates/         # report.html + report.css
+│       ├── pdf_export.py      # Jinja2 HTML → WeasyPrint PDF + Markdown
+│       └── templates/         # report.html + report.css + report.md
 ├── config/
-│   ├── targets.yaml           # Целевые модели (включая Qwen)
+│   ├── targets.yaml           # Целевые модели
 │   └── attack_config.yaml     # Атаки, пороги, judge preset
 ├── scripts/
 │   └── run_redteam.py         # CLI точка входа
-├── tests/
-│   ├── test_runner.py         # 13 тестов (все проходят)
+├── eval/                      # RAG quality evaluation
+│   ├── eval_rag_metrics.py    # deepeval-based runner
+│   ├── scripts/run_eval.py    # CLI точка входа
+│   ├── config/                # eval_config.yaml + targets.yaml
+│   └── results/               # Timestamped eval results
+├── web/                       # Next.js web frontend
+│   ├── src/app/               # Pages: /, /redteam, /runner, /eval
+│   └── src/components/        # DashboardCharts, LogsTable, ComparisonTab
+├── tests/                     # pytest (112+ тестов)
+│   ├── test_runner.py
 │   ├── test_transformer.py
-│   └── test_charts.py
+│   ├── test_storage.py
+│   ├── test_eval_storage.py
+│   ├── test_severity.py
+│   ├── test_charts.py
+│   ├── test_quality_charts.py
+│   ├── test_cli.py
+│   ├── test_generator.py
+│   ├── test_pdf_export.py
+│   └── test_app_logic.py
+├── docs/                      # Документация
 └── results/                   # Генерируемые данные (gitignore)
     ├── latest.parquet
     └── history/
@@ -98,124 +132,44 @@ RedTeaming DeepThroath/
 
 **Файлы:** `src/red_team/runner.py`, `src/red_team/attacks.py`, `src/red_team/judges.py`
 
-### Реализовано
-
-- [x] Установлены зависимости: `deepteam==1.0.6`, `anthropic`, `openai`, `pandas`
-- [x] Async `model_callback(input: str, messages: list[RTTurn]) -> RTTurn`
-- [x] Поддержка Anthropic и OpenRouter (Qwen, Gemini, Llama и др.)
-- [x] Настроены уязвимости: `PromptLeakage`, `PIILeakage`, `ExcessiveAgency`, `Toxicity`, `Bias`, `IllegalActivity`
-- [x] Настроены атаки: `PromptInjection`, `Roleplay`, `CrescendoJailbreaking`, `LinearJailbreaking`
-- [x] `simulator_model` и `evaluation_model` передаются в `red_team()` для обхода зависимости от OPENAI_API_KEY
-- [x] `ignore_errors=True` для устойчивости при отказе модели генерировать вредоносный контент
-
-### Конфигурация judge-моделей
-
-```python
-# config/attack_config.yaml
-judge_preset: gemini-flash   # или gpt-4o-mini, llama3-70b, haiku, ollama-llama
-
-# Запуск с выбором judge
-python scripts/run_redteam.py --target qwen-7b --judge gemini-flash
-```
-
-Доступные presets: `gemini-flash`, `gpt-4o-mini`, `llama3-70b`, `haiku`, `ollama-llama`
+- [x] Async model_callback (Anthropic + OpenRouter)
+- [x] Поддержка 4 типов атак: PromptInjection, Roleplay, CrescendoJailbreaking, LinearJailbreaking
+- [x] Поддержка 6 уязвимостей: PromptLeakage, PIILeakage, ExcessiveAgency, Toxicity, Bias, IllegalActivity
+- [x] Custom judge presets через YAML (`judge_custom_presets:`)
+- [x] `ignore_errors=True` для устойчивости при отказе модели
 
 ---
 
 ## Этап 2 — Сбор и трансформация данных (Data Layer) ✅
 
-**Файлы:** `src/data/transformer.py`, `src/data/storage.py`
+**Файлы:** `src/data/transformer.py`, `src/data/storage.py`, `src/data/eval_storage.py`
 
-### Реализовано
-
-- [x] `transform_risk_assessment(risk_assessment, model_version, judge_version)` → `pd.DataFrame`
-- [x] Итерация по `risk_assessment.overview.vulnerability_type_results` (реальный API DeepTeam)
-- [x] Добавлены колонки: `severity`, `owasp_id`, `owasp_name`, `asr`, `judge_version`, `timestamp`
-- [x] Сохранение в `results/latest.parquet`
-- [x] Архив в `results/history/{timestamp}.parquet` для trend-анализа
-- [x] JSON-сериализация диалогов в колонку `conversations`
-
-### Схема DataFrame
-
-| Колонка | Тип | Описание |
-|---------|-----|----------|
-| `vulnerability` | str | Название уязвимости (deepteam class name) |
-| `owasp_id` | str | LLM01-LLM10 |
-| `owasp_name` | str | Название категории (RU) |
-| `severity` | str | Critical/High/Medium/Low |
-| `pass_rate` | float | 0.0 — 1.0 |
-| `asr` | float | 1 - pass_rate |
-| `passed` | int | Число пройденных тестов |
-| `failed` | int | Число провалов |
-| `errored` | int | Число ошибок (ignore_errors=True) |
-| `total` | int | passed + failed |
-| `attack_type` | str | Метод атаки |
-| `model_version` | str | Версия/имя модели |
-| `judge_version` | str | Версия judge-модели |
-| `session_id` | str | Опциональный тег сессии |
-| `timestamp` | str | ISO 8601 UTC |
-| `conversations` | str | JSON-массив диалогов |
+- [x] `transform_risk_assessment()` → typed `pd.DataFrame`
+- [x] Parquet storage + история в `results/history/`
+- [x] `list_scan_files()` для scan selector в дашборде
+- [x] `eval_storage.py` — читает eval/results/ JSON файлы
+- [x] `quality_score()` — взвешенный quality score 0–100
 
 ---
 
 ## Этап 3 — Интерфейс (Streamlit Dashboard) ✅
 
-**Файлы:** `src/dashboard/app.py`, `src/dashboard/charts.py`, `src/dashboard/logs_table.py`
+**Файлы:** `src/dashboard/unified_app.py`, `src/dashboard/app.py`, `src/dashboard/charts.py`, `src/dashboard/quality_charts.py`
 
-### Реализовано
-
-- [x] 4 вкладки: **Обзор**, **По категориям OWASP**, **Тренд**, **Логи атак**
-- [x] KPI-строка: Security Score, ASR, всего тестов, провалено
-- [x] Интерактивные expander'ы с описанием OWASP-риска и шагами ремедиации
-- [x] Полная локализация на русском языке
-- [x] Self-healing UI: при ошибке WeasyPrint показывает инструкцию `brew install pango`
-- [x] Кнопка генерации PDF-отчёта с полем имени клиента
-
-### Запуск дашборда
-
-```bash
-streamlit run src/dashboard/app.py
-# http://localhost:8501
-```
+- [x] Unified app: вкладки Безопасность + Качество + Сравнение + Логи
+- [x] KPI-строка: Security Score, ASR, Quality Score
+- [x] OWASP expander с ремедиацией
+- [x] Кнопки PDF / Markdown / JSON экспорта
 
 ---
 
-## Этап 4 — Автоматизация (DevSecOps) 🔜
+## Этап 4 — Автоматизация (CI/CD) ✅ (частично)
 
-**Файлы:** `.github/workflows/redteam.yml`, `scripts/run_redteam.py`
+**Файлы:** `.github/workflows/redteam.yml`
 
-### Запланировано
-
-- [ ] GitHub Actions workflow (триггер на push/PR/schedule)
-- [ ] Публикация summary-метрик в PR comment
-- [ ] Exit code 1 если `asr > asr_threshold`
-- [ ] Артефакты результатов в CI
-
-### Пример workflow
-
-```yaml
-name: LLM Red Team Security Scan
-on:
-  push:
-    branches: [main]
-    paths: ['config/targets.yaml', 'config/attack_config.yaml']
-  schedule:
-    - cron: '0 2 * * 1'  # Каждый понедельник
-jobs:
-  red-team:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - run: pip install -r requirements.txt
-      - run: python scripts/run_redteam.py --target default --judge gemini-flash
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      - uses: actions/upload-artifact@v4
-        with: { name: redteam-results, path: results/ }
-```
+- [x] GitHub Actions workflow создан
+- [x] Ручной запуск (`workflow_dispatch`) работает
+- [ ] Авто-запуск на push/PR/schedule — backlog
 
 ---
 
@@ -223,27 +177,31 @@ jobs:
 
 **Файлы:** `src/reports/generator.py`, `src/reports/pdf_export.py`, `src/reports/templates/`
 
-### Реализовано
-
 - [x] `calculate_security_score(df)` — взвешенный score 0–100
-- [x] `build_report_context(df, history_df, client_name)` — сборка контекста отчёта
-- [x] Jinja2-шаблон с обложкой, методологией, OWASP-результатами, доказательствами
-- [x] WeasyPrint PDF export с обработкой ошибок (`OSError` → инструкция для пользователя)
-- [x] Кнопка "Скачать PDF" в дашборде
+- [x] Jinja2 HTML + WeasyPrint PDF
+- [x] Markdown export (без системных зависимостей)
 
-### Формула Security Score
+---
 
-```python
-SEVERITY_WEIGHTS = {"Critical": 0.40, "High": 0.30, "Medium": 0.20, "Low": 0.10}
+## Этап 6 — RAG Quality Evaluation ✅
 
-def calculate_security_score(df: DataFrame) -> float:
-    weighted_pass = sum(
-        row["pass_rate"] * SEVERITY_WEIGHTS[row["severity"]]
-        for _, row in df.iterrows()
-    )
-    total_weight = sum(SEVERITY_WEIGHTS[s] for s in df["severity"])
-    return round((weighted_pass / total_weight) * 100, 1)
-```
+**Файлы:** `eval/`, `src/data/eval_storage.py`, `src/dashboard/quality_charts.py`
+
+- [x] deepeval метрики: AnswerRelevancy, Faithfulness
+- [x] Top-K параметр для RAG экспериментов
+- [x] Eval results хранятся в `eval/results/{timestamp}/`
+- [x] Markdown report generation
+- [x] Quality charts в unified дашборде
+
+---
+
+## Этап 7 — Web Frontend (Next.js) ✅
+
+**Файлы:** `web/`
+
+- [x] Страницы: `/` (overview), `/redteam`, `/runner`, `/eval`
+- [x] API routes: `/api/runner/redteam`, `/api/eval`, `/api/data`, `/api/run`
+- [x] Компоненты: DashboardCharts, DatasetUpload, LogsTable, ExportActions, ComparisonTab
 
 ---
 
@@ -253,19 +211,22 @@ def calculate_security_score(df: DataFrame) -> float:
 # requirements.txt (ключевые)
 deepteam==1.0.6
 deepeval==3.9.3
-anthropic>=0.40.0
-openai>=1.0.0          # для OpenRouter-совместимых вызовов
-pandas>=2.0.0
-pyarrow>=14.0.0
-streamlit>=1.35.0
-plotly>=5.20.0
+anthropic==0.86.0
+openai==2.30.0
+pandas==2.3.3
+pyarrow==23.0.1
+streamlit==1.55.0
+plotly==6.6.0
+pydantic==2.12.5
 pyyaml>=6.0
-python-dotenv>=1.0.0
+python-dotenv==1.2.2
 jinja2>=3.1.0
-weasyprint>=62.0       # требует: brew install pango gdk-pixbuf libffi
+weasyprint>=62.0
+httpx>=0.28.0
+gigachat
 ```
 
-**Требования к Python:** 3.11+ (deepteam использует синтаксис `X | Y` union, несовместимый с 3.9)
+**Требования к Python:** 3.11+
 
 ---
 
@@ -277,4 +238,6 @@ weasyprint>=62.0       # требует: brew install pango gdk-pixbuf libffi
 | `OPENROUTER_API_KEY` | Да (для OpenRouter-таргетов и judge) | API ключ OpenRouter |
 | `OPENAI_API_KEY` | Нет | Опционально для OpenAI judge |
 | `ASR_THRESHOLD` | Нет (default: 0.20) | Порог провала CI |
-| `RESULTS_DIR` | Нет (default: ./results) | Директория результатов |
+| `RESULTS_DIR` | Нет (default: ./results) | Директория red team результатов |
+| `EVAL_RESULTS_DIR` | Нет (default: ./eval/results) | Директория eval результатов |
+| `OPENROUTER_BASE_URL` | Нет | Override OpenRouter base URL |

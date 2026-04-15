@@ -82,7 +82,7 @@ export default function EvalDashboard() {
       <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white">
         <div className="animate-pulse flex flex-col items-center">
           <Activity className="w-16 h-16 mb-4 text-purple-500 animate-spin" />
-          <h2 className="text-2xl font-bold tracking-tight">Загрузка RAG-метрик...</h2>
+          <h2 suppressHydrationWarning className="text-2xl font-bold tracking-tight">Загрузка RAG-метрик...</h2>
         </div>
       </div>
     );
@@ -99,7 +99,7 @@ export default function EvalDashboard() {
              <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                  <Rocket className="w-10 h-10 text-purple-400" />
              </div>
-             <h2 className="text-3xl font-extrabold tracking-tight mb-4 drop-shadow-sm">Оценка RAG пока пуста</h2>
+             <h2 suppressHydrationWarning className="text-3xl font-extrabold tracking-tight mb-4 drop-shadow-sm">Оценка RAG пока пуста</h2>
              <p className="text-white/60 text-lg mb-8 leading-relaxed">
                В системе пока нет отчетов о качестве генерации.<br/>Перейдите в API Runner, чтобы запустить свой первый тест.
              </p>
@@ -119,7 +119,7 @@ export default function EvalDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
+            <h1 suppressHydrationWarning className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
               RAG Quality
             </h1>
             <p className="text-white/80 mt-3 text-lg font-medium">Оценка релевантности и фактологии</p>
@@ -259,7 +259,7 @@ export default function EvalDashboard() {
 
         {/* Detailed Logs Accordion */}
         <div className="space-y-4 pt-10">
-            <h2 className="text-2xl font-bold flex items-center gap-3 drop-shadow-sm mb-6">
+            <h2 suppressHydrationWarning className="text-2xl font-bold flex items-center gap-3 drop-shadow-sm mb-6">
                 <FileText className="w-6 h-6 text-purple-400" /> Детальные ответы модели
             </h2>
             
@@ -304,14 +304,14 @@ export default function EvalDashboard() {
                             
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium text-slate-400">Фактический ответ (Actual)</h4>
+                                  <h4 suppressHydrationWarning className="text-sm font-medium text-slate-400">Фактический ответ (Actual)</h4>
                                   <div className="bg-slate-950 p-4 rounded-md text-slate-300 text-sm border border-slate-800">
                                       {m.actual_answer}
                                   </div>
                                </div>
                                {m.expected_answer && (
                                  <div className="space-y-2">
-                                    <h4 className="text-sm font-medium text-slate-400">Ожидаемый ответ (Expected)</h4>
+                                    <h4 suppressHydrationWarning className="text-sm font-medium text-slate-400">Ожидаемый ответ (Expected)</h4>
                                     <div className="bg-slate-950 p-4 rounded-md text-slate-300 text-sm border border-slate-800">
                                         {m.expected_answer}
                                     </div>
@@ -350,7 +350,7 @@ export default function EvalDashboard() {
                             {/* Context */}
                             {m.retrieval_context && m.retrieval_context.length > 0 && (
                                 <div className="space-y-2 pt-4">
-                                    <h4 className="text-base font-semibold text-white/90 drop-shadow-sm">Контекст из BZ (Retrieval Context)</h4>
+                                    <h4 suppressHydrationWarning className="text-base font-semibold text-white/90 drop-shadow-sm">Контекст из BZ (Retrieval Context)</h4>
                                     <div className="space-y-3">
                                         {m.retrieval_context.map((ctx: string, cIdx: number) => (
                                             <div key={cIdx} className="bg-white/5 border border-white/10 p-4 rounded-xl text-[15px] font-medium text-white/90 font-mono shadow-inner">
