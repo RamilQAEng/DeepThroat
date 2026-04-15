@@ -10,12 +10,11 @@ import DatasetUpload from "@/components/DatasetUpload";
 
 export default function RunnerPage() {
     const [activeTab, setActiveTab] = useState<string>("eval");
-    const [datasets, setDatasets] = useState<{name: string, path: string}[]>([]);
+    const [datasets, setDatasets] = useState<{ name: string, path: string }[]>([]);
     const [datasetPath, setDatasetPath] = useState<string>("");
 
     // Общие поля API контракта
     const [url, setUrl] = useState("http://localhost:8000/api/v1/eval/rag");
-    const [method, setMethod] = useState("POST");
     const [headersStr, setHeadersStr] = useState("{\n  \"Content-Type\": \"application/json\"\n}");
     const [bodyStr, setBodyStr] = useState("{\n  \"question\": \"{{user_query}}\",\n  \"category\": \"{{category}}\"\n}");
     const [extractAnswer, setExtractAnswer] = useState("answer");
@@ -79,7 +78,7 @@ export default function RunnerPage() {
             // Формируем API контракт (общий для обеих вкладок)
             const apiContract = {
                 url,
-                method,
+                method: "POST",
                 headers: parsedHeaders,
                 body: parsedBody,
                 extractors: {
@@ -158,46 +157,33 @@ export default function RunnerPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 z-10 relative">
-                            <div className="flex gap-4">
-                                <div className="w-28">
-                                    <label className={labelClasses}>Method</label>
-                                    <Select value={method} onValueChange={(v) => v && setMethod(v)}>
-                                        <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white font-bold h-9 w-full focus:ring-purple-500/50 rounded-md">
-                                            <SelectValue placeholder="Method" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-900 border-white/10 text-white font-bold">
-                                            <SelectItem value="POST" className="text-emerald-400">POST</SelectItem>
-                                            <SelectItem value="GET" className="text-blue-400">GET</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className={labelClasses}>Эндпоинт (URL)</label>
-                                    <input
-                                        type="text"
-                                        className={inputClasses}
-                                        value={url}
-                                        onChange={e => setUrl(e.target.value)}
-                                        placeholder="https://api.example.com/v1/rag"
-                                    />
-                                </div>
+                            <div>
+                                <label className={labelClasses}>Endpoint (URL)</label>
+                                <input
+                                    type="text"
+                                    className={inputClasses}
+                                    value={url}
+                                    onChange={e => setUrl(e.target.value)}
+                                    placeholder="https://api.example.com/v1/rag"
+                                />
+                                <p className="text-xs text-white/40 mt-1">Используется метод POST</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClasses}><Key className="w-4 h-4 text-purple-400" /> Headers (JSON)</label>
-                                    <textarea 
-                                        className={textareaClasses} 
-                                        value={headersStr} 
+                                    <textarea
+                                        className={textareaClasses}
+                                        value={headersStr}
                                         onChange={e => setHeadersStr(e.target.value)}
                                         spellCheck={false}
                                     />
                                 </div>
                                 <div>
                                     <label className={labelClasses}><Braces className="w-4 h-4 text-pink-400" /> Body Payload (JSON)</label>
-                                    <textarea 
-                                        className={textareaClasses} 
-                                        value={bodyStr} 
+                                    <textarea
+                                        className={textareaClasses}
+                                        value={bodyStr}
                                         onChange={e => setBodyStr(e.target.value)}
                                         spellCheck={false}
                                     />
@@ -220,20 +206,20 @@ export default function RunnerPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelClasses}>Путь до основного ответа (Answer Path)</label>
-                                    <input 
-                                        type="text" 
-                                        className={inputClasses} 
-                                        value={extractAnswer} 
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={extractAnswer}
                                         onChange={e => setExtractAnswer(e.target.value)}
                                         placeholder="data.answer"
                                     />
                                 </div>
                                 <div>
                                     <label className={labelClasses}>Путь до найденных чанков (Chunks Path)</label>
-                                    <input 
-                                        type="text" 
-                                        className={inputClasses} 
-                                        value={extractChunks} 
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={extractChunks}
                                         onChange={e => setExtractChunks(e.target.value)}
                                         placeholder="data.retrieved_chunks"
                                     />
@@ -328,7 +314,7 @@ export default function RunnerPage() {
                                                         type="checkbox"
                                                         className="w-3.5 h-3.5 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
                                                         checked={metrics[m]}
-                                                        onChange={e => setMetrics({...metrics, [m]: e.target.checked})}
+                                                        onChange={e => setMetrics({ ...metrics, [m]: e.target.checked })}
                                                     />
                                                     <span className="font-medium text-xs">{m === "AR" ? "Answer Rel" : m === "FA" ? "Faithfulness" : m === "CP" ? "Ctx Precision" : "Ctx Recall"}</span>
                                                 </label>
