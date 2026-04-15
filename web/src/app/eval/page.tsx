@@ -129,15 +129,36 @@ export default function EvalDashboard() {
             {data?.allScans && data.allScans.length > 0 && (
               <div className="w-80">
                 <Select value={selectedScan} onValueChange={(val) => val && setSelectedScan(val)}>
-                  <SelectTrigger className="bg-slate-900 border-slate-800 text-slate-200 min-w-0">
-                    <span className="truncate text-sm">
-                      {data.allScans.find((s: any) => s.value === activeScan)?.label ?? "Выберите скан"}
-                    </span>
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-slate-200 h-auto py-2">
+                    {(() => {
+                      const lbl = data.allScans.find((s: any) => s.value === activeScan)?.label ?? "Выберите скан";
+                      const dotIdx = lbl.indexOf('·');
+                      if (dotIdx === -1) return <span className="text-sm">{lbl}</span>;
+                      const datePart = lbl.slice(0, dotIdx).trim();
+                      const namePart = lbl.slice(dotIdx + 1).trim();
+                      return (
+                        <div className="text-left min-w-0 overflow-hidden">
+                          <div className="text-sm font-medium leading-tight">{datePart}</div>
+                          <div className="text-xs text-slate-400 truncate leading-tight">{namePart}</div>
+                        </div>
+                      );
+                    })()}
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                    {data.allScans.map((scan: any) => (
-                      <SelectItem key={scan.value} value={scan.value}>{scan.label}</SelectItem>
-                    ))}
+                    {data.allScans.map((scan: any) => {
+                      const dotIdx = scan.label.indexOf('·');
+                      if (dotIdx === -1) return <SelectItem key={scan.value} value={scan.value}>{scan.label}</SelectItem>;
+                      const datePart = scan.label.slice(0, dotIdx).trim();
+                      const namePart = scan.label.slice(dotIdx + 1).trim();
+                      return (
+                        <SelectItem key={scan.value} value={scan.value}>
+                          <div>
+                            <div className="text-sm font-medium">{datePart}</div>
+                            <div className="text-xs text-slate-400">{namePart}</div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -188,30 +209,6 @@ export default function EvalDashboard() {
           </Card>
 
           <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative group">
-            <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold text-white/90 drop-shadow-sm">Успешно</CardTitle>
-              <Activity className="h-6 w-6 text-emerald-400 drop-shadow-md" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-bold text-white tracking-tight drop-shadow-md">{passedQueries}</div>
-              <p className="text-[15px] text-white/80 mt-3 font-medium">Пройдено по всем метрикам</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative group">
-            <div className="absolute inset-0 bg-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold text-white/90 drop-shadow-sm">Провалов</CardTitle>
-              <AlertTriangle className="h-6 w-6 text-orange-400 drop-shadow-md" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-bold text-white tracking-tight drop-shadow-md">{totalQueries - passedQueries}</div>
-              <p className="text-[15px] text-white/80 mt-3 font-medium">Вопросов с галлюцинациями</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-semibold text-white/90 drop-shadow-sm">Ctx Precision</CardTitle>
@@ -232,6 +229,30 @@ export default function EvalDashboard() {
             <CardContent>
               <div className="text-5xl font-bold text-white tracking-tight drop-shadow-md">{avgCR !== null ? (avgCR * 100).toFixed(1) + "%" : "—"}</div>
               <p className="text-[15px] text-white/80 mt-3 font-medium">Охват ожидаемого ответа</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative group">
+            <div className="absolute inset-0 bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold text-white/90 drop-shadow-sm">Успешно</CardTitle>
+              <Activity className="h-6 w-6 text-emerald-400 drop-shadow-md" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-bold text-white tracking-tight drop-shadow-md">{passedQueries}</div>
+              <p className="text-[15px] text-white/80 mt-3 font-medium">Пройдено по всем метрикам</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-2xl rounded-2xl overflow-hidden relative group">
+            <div className="absolute inset-0 bg-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold text-white/90 drop-shadow-sm">Провалов</CardTitle>
+              <AlertTriangle className="h-6 w-6 text-orange-400 drop-shadow-md" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-5xl font-bold text-white tracking-tight drop-shadow-md">{totalQueries - passedQueries}</div>
+              <p className="text-[15px] text-white/80 mt-3 font-medium">Вопросов с галлюцинациями</p>
             </CardContent>
           </Card>
         </div>
@@ -266,17 +287,15 @@ export default function EvalDashboard() {
                                     {m.faithfulness_score === null && (
                                         <Badge variant="outline" className="w-20 justify-center border-slate-800 text-slate-500">FA: N/A</Badge>
                                     )}
-                                    {m.contextual_precision_score != null && (
+                                    {m.contextual_precision_score != null ? (
                                         <Badge className={"w-20 justify-center " + (m.contextual_precision_passed ? 'bg-cyan-900 text-cyan-400' : 'bg-red-900 text-red-400')}>CP: {(m.contextual_precision_score * 100).toFixed(0)}%</Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="w-20 justify-center border-slate-800 text-slate-500">CP: N/A</Badge>
                                     )}
-                                    {m.contextual_recall_score != null && (
+                                    {m.contextual_recall_score != null ? (
                                         <Badge className={"w-20 justify-center " + (m.contextual_recall_passed ? 'bg-violet-900 text-violet-400' : 'bg-red-900 text-red-400')}>CR: {(m.contextual_recall_score * 100).toFixed(0)}%</Badge>
-                                    )}
-                                    {m.contextual_precision_score != null && (
-                                        <Badge className={"w-20 justify-center " + (m.contextual_precision_passed ? 'bg-cyan-900 text-cyan-400' : 'bg-red-900 text-red-400')}>CP: {(m.contextual_precision_score * 100).toFixed(0)}%</Badge>
-                                    )}
-                                    {m.contextual_recall_score != null && (
-                                        <Badge className={"w-20 justify-center " + (m.contextual_recall_passed ? 'bg-violet-900 text-violet-400' : 'bg-red-900 text-red-400')}>CR: {(m.contextual_recall_score * 100).toFixed(0)}%</Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="w-20 justify-center border-slate-800 text-slate-500">CR: N/A</Badge>
                                     )}
                                 </div>
                             </div>

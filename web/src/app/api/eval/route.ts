@@ -11,15 +11,15 @@ function parseScanLabel(name: string): string {
     const m = name.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})\d{2}_(.+)$/);
     if (m) {
         const [, y, mo, d, hh, mm, rest] = m;
-        // rest might be: 20260329_173829_exp_top_k_10 — drop leading date prefix if present
-        const expName = rest.replace(/^\d{8}_\d{6}_/, '');
+        // rest might be: 20260329_173829_exp_top_k_10 — drop ALL leading date prefixes
+        const expName = rest.replace(/^(\d{8}_\d{6}_)+/, '');
         return `${d}.${mo}.${y} ${hh}:${mm}  ·  ${expName}`;
     }
     // root-level json files
     const mj = name.match(/^(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})\d{2}_(.+?)_metrics\.json$/);
     if (mj) {
         const [, y, mo, d, hh, mm, rest] = mj;
-        const expName = rest.replace(/^\d{8}_\d{6}_/, '');
+        const expName = rest.replace(/^(\d{8}_\d{6}_)+/, '');
         return `${d}.${mo}.${y} ${hh}:${mm}  ·  ${expName}`;
     }
     return name;
