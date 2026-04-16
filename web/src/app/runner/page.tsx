@@ -125,35 +125,35 @@ export default function RunnerPage() {
         }
     };
 
-    const inputClasses = "flex h-9 w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all";
-    const textareaClasses = "flex w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all font-mono min-h-[100px] resize-none";
-    const labelClasses = "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block flex items-center gap-2";
+    const inputClasses = "flex h-9 w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm text-[#222222] placeholder:text-[#8e8e93] focus:outline-none focus:ring-2 focus:ring-[#1456f0]/30 focus:border-[#1456f0] transition-all";
+    const textareaClasses = "flex w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm text-[#222222] placeholder:text-[#8e8e93] focus:outline-none focus:ring-2 focus:ring-[#1456f0]/30 focus:border-[#1456f0] transition-all font-mono min-h-[100px] resize-none";
+    const labelClasses = "text-xs font-semibold text-[#45515e] uppercase tracking-wider mb-2 flex items-center gap-2";
 
     return (
         <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h1 suppressHydrationWarning className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3">
-                    <Activity className="w-7 h-7 text-cyan-400" />
+                <h1 suppressHydrationWarning className="text-3xl font-extrabold tracking-tight text-[#222222] drop-shadow-sm flex items-center gap-3" style={{ fontFamily: "var(--font-outfit, Outfit)" }}>
+                    <Activity className="w-7 h-7 text-[#1456f0]" />
                     API Runner
                 </h1>
-                <p className="text-white/60 mt-2 text-base font-medium">Унифицированный запуск RAG Evaluation и Red Teaming через API контракт</p>
+                <p className="text-[#8e8e93] mt-2 text-base font-medium">Унифицированный запуск RAG Evaluation и Red Teaming через API контракт</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Left Column - API Contract (общие поля) */}
                 <div className="lg:col-span-8 space-y-5">
 
-                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Link2 className="w-24 h-24 text-cyan-500" />
+                    <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-4 opacity-5">
+                            <Link2 className="w-24 h-24 text-[#1456f0]" />
                         </div>
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md flex justify-between items-center z-10">
+                            <CardTitle className="text-lg font-bold tracking-tight text-[#222222] flex justify-between items-center z-10">
                                 <span className="flex items-center gap-2">
                                     Конфигурация запроса
                                 </span>
-                                <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 px-2 py-0.5 text-xs">Network</Badge>
+                                <Badge variant="outline" className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] px-2 py-0.5 text-xs">Network</Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 z-10 relative">
@@ -166,7 +166,7 @@ export default function RunnerPage() {
                                     onChange={e => setUrl(e.target.value)}
                                     placeholder="https://api.example.com/v1/rag"
                                 />
-                                <p className="text-xs text-white/40 mt-1">Используется метод POST</p>
+                                <p className="text-xs text-[#8e8e93] mt-1">Используется метод POST</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,19 +187,19 @@ export default function RunnerPage() {
                                         onChange={e => setBodyStr(e.target.value)}
                                         spellCheck={false}
                                     />
-                                    <p className="text-xs text-white/40 mt-2">Доступные переменные: {`{{user_query}}`}, {`{{category}}`}</p>
+                                    <p className="text-xs text-[#8e8e93] mt-2">Доступные переменные: {`{{user_query}}`}, {`{{category}}`}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white/5 border border-white/10 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
+                    <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md z-10 flex justify-between items-center">
+                            <CardTitle className="text-lg font-bold tracking-tight text-[#222222] z-10 flex justify-between items-center">
                                 <span className="flex items-center gap-2">
                                     Маппинг ответа
                                 </span>
-                                <Badge variant="outline" className="bg-pink-500/10 text-pink-400 border-pink-500/30 px-2 py-0.5 text-xs">Parsing</Badge>
+                                <Badge variant="outline" className="bg-[#fdf2f8] text-[#be185d] border-[#fbcfe8] px-2 py-0.5 text-xs">Parsing</Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 z-10 relative">
@@ -231,15 +231,15 @@ export default function RunnerPage() {
 
                 {/* Right Column - Tabs with specific settings */}
                 <div className="lg:col-span-4 space-y-5">
-                    <Card className="bg-gradient-to-b from-purple-900/20 to-slate-900/40 border border-purple-500/20 backdrop-blur-[40px] shadow-xl rounded-xl overflow-hidden relative">
+                    <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg font-bold tracking-tight text-white drop-shadow-md z-10 flex items-center gap-2">
+                            <CardTitle className="text-lg font-bold tracking-tight text-[#222222] z-10 flex items-center gap-2">
                                 Режим работы
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-5 z-10 relative">
                             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                <TabsList className="w-full bg-slate-950/50 border border-white/10 p-1 rounded-md">
+                                <TabsList className="w-full bg-[#f2f3f5] border border-[#e5e7eb] p-1 rounded-md">
                                     <TabsTrigger value="eval" className="flex-1 gap-1.5 text-sm">
                                         <BarChart3 className="w-3.5 h-3.5" />
                                         Evaluate RAG
@@ -260,20 +260,20 @@ export default function RunnerPage() {
 
                                         <div className="relative py-1">
                                             <div className="absolute inset-0 flex items-center">
-                                                <div className="w-full border-t border-white/10"></div>
+                                                <div className="w-full border-t border-[#e5e7eb]"></div>
                                             </div>
                                             <div className="relative flex justify-center text-xs">
-                                                <span className="bg-slate-900/80 px-3 py-1 text-white/40 rounded-full text-[10px]">или выберите существующий</span>
+                                                <span className="bg-white px-3 py-1 text-[#8e8e93] rounded-full text-[10px]">или выберите существующий</span>
                                             </div>
                                         </div>
 
                                         <div>
                                             <label className={labelClasses}><Database className="w-3.5 h-3.5 text-emerald-400" /> Выбор датасета</label>
                                             <Select value={datasetPath} onValueChange={(v) => v && setDatasetPath(v)}>
-                                                <SelectTrigger className="bg-slate-950/50 border border-white/10 text-white h-9 w-full focus:ring-purple-500/50 text-sm rounded-md">
+                                                <SelectTrigger className="bg-white border border-[#e5e7eb] text-[#222222] h-9 w-full focus:ring-[#1456f0]/30 text-sm rounded-md">
                                                     <SelectValue placeholder="Загрузка..." />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-slate-900 border-white/10 text-white">
+                                                <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
                                                     {datasets.map(d => (
                                                         <SelectItem key={d.path} value={d.path}>{d.name}</SelectItem>
                                                     ))}
@@ -291,7 +291,7 @@ export default function RunnerPage() {
                                             onChange={e => setEvalJudge(e.target.value)}
                                             placeholder="gpt4o-mini-or"
                                         />
-                                        <p className="text-xs text-white/40 mt-1">Определено в eval/config/targets.yaml</p>
+                                        <p className="text-xs text-[#8e8e93] mt-1">Определено в eval/config/targets.yaml</p>
                                     </div>
 
                                     <div>
@@ -309,10 +309,10 @@ export default function RunnerPage() {
                                         <label className={labelClasses}>Что вычислять (Метрики)</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {(["AR", "FA", "CP", "CR"] as const).map(m => (
-                                                <label key={m} className="flex items-center gap-2 text-sm text-white/80 select-none cursor-pointer p-2 rounded-md border border-white/5 bg-slate-950/30 hover:bg-slate-950/60 hover:border-white/10 transition-all">
+                                                <label key={m} className="flex items-center gap-2 text-sm text-[#222222] select-none cursor-pointer p-2 rounded-md border border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] hover:border-[#d1d5db] transition-all">
                                                     <input
                                                         type="checkbox"
-                                                        className="w-3.5 h-3.5 rounded border-white/20 text-purple-500 focus:ring-purple-500/50"
+                                                        className="w-3.5 h-3.5 rounded border-[#e5e7eb] text-purple-500 focus:ring-purple-500/50"
                                                         checked={metrics[m]}
                                                         onChange={e => setMetrics({ ...metrics, [m]: e.target.checked })}
                                                     />
@@ -334,7 +334,7 @@ export default function RunnerPage() {
                                             onChange={e => setRedteamJudge(e.target.value)}
                                             placeholder="gpt-4o-mini"
                                         />
-                                        <p className="text-xs text-white/40 mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
+                                        <p className="text-xs text-[#8e8e93] mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
                                     </div>
 
                                     <div>
@@ -347,7 +347,7 @@ export default function RunnerPage() {
                                             placeholder="1"
                                             min="1"
                                         />
-                                        <p className="text-xs text-white/40 mt-1">Количество симуляций атак на каждую уязвимость</p>
+                                        <p className="text-xs text-[#8e8e93] mt-1">Количество симуляций атак на каждую уязвимость</p>
                                     </div>
 
                                     <div>
@@ -362,12 +362,12 @@ export default function RunnerPage() {
                                             min="0"
                                             max="1"
                                         />
-                                        <p className="text-xs text-white/40 mt-1">Attack Success Rate выше порога = FAIL</p>
+                                        <p className="text-xs text-[#8e8e93] mt-1">Attack Success Rate выше порога = FAIL</p>
                                     </div>
                                 </TabsContent>
                             </Tabs>
 
-                            <div className="pt-4 border-t border-white/10">
+                            <div className="pt-4 border-t border-[#e5e7eb]">
                                 <button
                                     onClick={handleRun}
                                     disabled={status === 'loading'}
@@ -383,15 +383,15 @@ export default function RunnerPage() {
                             </div>
 
                             {status === "error" && (
-                                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium">
+                                <div className="p-3 rounded-lg bg-[#fef2f2] border border-red-200 text-[#dc2626] text-sm font-medium">
                                     <span className="font-bold">Ошибка:</span> {message}
                                 </div>
                             )}
 
                             {status === "success" && (
-                                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium space-y-1">
+                                <div className="p-3 rounded-lg bg-[#ecfdf5] border border-emerald-200 text-[#059669] text-sm font-medium space-y-1">
                                     <p>{message}</p>
-                                    <div className="flex items-center gap-1.5 text-emerald-300 text-xs">
+                                    <div className="flex items-center gap-1.5 text-[#059669] text-xs">
                                         <ExternalLink className="w-3 h-3" />
                                         <span>Проверьте логи или страницу результатов через пару минут</span>
                                     </div>
