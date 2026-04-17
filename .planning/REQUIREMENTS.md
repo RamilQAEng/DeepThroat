@@ -51,8 +51,24 @@
 
 ## Traceability
 
-| REQ-ID | Phase |
-|--------|-------|
-| RAGAS-01 — RAGAS-07, DEP-01 — DEP-02 | Phase 1: Python Pipeline |
-| API-01 — API-03 | Phase 2: API Route |
-| UI-01 — UI-05, CUST-01 — CUST-02 | Phase 3: UI & Docs |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| RAGAS-01 | Phase 1: Python Pipeline | Pending |
+| RAGAS-02 | Phase 1: Python Pipeline | Pending |
+| RAGAS-03 | Phase 1: Python Pipeline | Pending |
+| RAGAS-04 | Phase 1: Python Pipeline | Pending |
+| RAGAS-05 | Phase 1: Python Pipeline | Pending |
+| RAGAS-06 | Phase 1: Python Pipeline | Pending |
+| RAGAS-07 | Phase 1: Python Pipeline | Pending |
+| DEP-01 | Phase 1: Python Pipeline | Pending |
+| DEP-02 | Phase 1: Python Pipeline | Pending |
+| API-01 | Phase 2: API Route | Pending |
+| API-02 | Phase 2: API Route | Pending |
+| API-03 | Phase 2: API Route | Pending |
+| UI-01 | Phase 3: UI & Docs | Pending |
+| UI-02 | Phase 3: UI & Docs | Pending |
+| UI-03 | Phase 3: UI & Docs | Pending |
+| UI-04 | Phase 3: UI & Docs | Pending |
+| UI-05 | Phase 3: UI & Docs | Pending |
+| CUST-01 | Phase 3: UI & Docs | Pending |
+| CUST-02 | Phase 3: UI & Docs | Pending |
