@@ -22,7 +22,10 @@
   3. Если в записях датасета отсутствует retrieval_context, скрипт не падает и пропускает контекстные метрики с предупреждением
   4. Скрипт использует OPENAI_API_KEY и OPENAI_BASE_URL из .env — тот же конфиг что у DeepEval
   5. Python-классы из eval/custom_metrics/ подхватываются автоматически при наличии папки
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
+- [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
+- [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
 ### Phase 2: API Route
 **Goal**: Фронтенд может получить список RAGAS-сканов и метрики через /api/eval/ragas, существующий /api/eval не затронут
@@ -32,7 +35,10 @@
   1. GET /api/eval/ragas?scan=latest возвращает JSON с метриками последнего RAGAS-скана
   2. GET /api/eval/ragas?scan={scanName} возвращает метрики конкретного скана по имени
   3. GET /api/eval (существующий endpoint) не включает в ответ папки с суффиксом _ragas
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
+- [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
+- [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
 ### Phase 3: UI & Docs
 **Goal**: Пользователь видит вкладку RAGAS внутри /eval, может выбрать скан и изучить результаты без ущерба для существующего DeepEval UI
@@ -44,7 +50,10 @@
   3. Клик на запись в таблице раскрывает accordion с вопросом, ответом, ground truth, контекстом и объяснениями метрик
   4. Selector сканов позволяет переключаться между доступными RAGAS-прогонами
   5. Секция "Кастомные метрики" содержит инструкцию на русском и копируемый шаблон Python-класса
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
+- [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
+- [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 **UI hint**: yes
 
 ## Progress
