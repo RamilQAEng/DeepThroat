@@ -14,7 +14,8 @@ export default function RunnerPage() {
     const [datasetPath, setDatasetPath] = useState<string>("");
 
     // Общие поля API контракта
-    const [url, setUrl] = useState("http://localhost:8000/api/v1/eval/rag");
+    const [url, setUrl] = useState("https://assist.dev.mglk.ru/api/v1/eval/rag");
+    const [method, setMethod] = useState("POST");
     const [headersStr, setHeadersStr] = useState("{\n  \"Content-Type\": \"application/json\"\n}");
     const [bodyStr, setBodyStr] = useState("{\n  \"question\": \"{{user_query}}\",\n  \"category\": \"{{category}}\"\n}");
     const [extractAnswer, setExtractAnswer] = useState("answer");
@@ -78,7 +79,7 @@ export default function RunnerPage() {
             // Формируем API контракт (общий для обеих вкладок)
             const apiContract = {
                 url,
-                method: "POST",
+                method,
                 headers: parsedHeaders,
                 body: parsedBody,
                 extractors: {
@@ -157,16 +158,28 @@ export default function RunnerPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 z-10 relative">
-                            <div>
-                                <label className={labelClasses}>Endpoint (URL)</label>
-                                <input
-                                    type="text"
-                                    className={inputClasses}
-                                    value={url}
-                                    onChange={e => setUrl(e.target.value)}
-                                    placeholder="https://api.example.com/v1/rag"
-                                />
-                                <p className="text-xs text-[#8e8e93] mt-1">Используется метод POST</p>
+                            <div className="flex gap-4">
+                                <div className="w-32">
+                                    <label className={labelClasses}>Method</label>
+                                    <Select value={method} onValueChange={(v) => v && setMethod(v)}>
+                                        <SelectTrigger className="bg-white border border-[#e5e7eb] text-[#222222] h-9 w-full focus:ring-[#1456f0]/30 rounded-md">
+                                            <SelectValue placeholder="Method" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
+                                            <SelectItem value="POST">POST</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className={labelClasses}>Endpoint (URL)</label>
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={url}
+                                        onChange={e => setUrl(e.target.value)}
+                                        placeholder="https://api.example.com/v1/rag"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
