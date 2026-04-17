@@ -25,7 +25,7 @@
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
 - [x] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
-- [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
+- [x] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
 ### Phase 2: API Route
 **Goal**: Фронтенд может получить список RAGAS-сканов и метрики через /api/eval/ragas, существующий /api/eval не затронут
@@ -37,7 +37,7 @@
   3. GET /api/eval (существующий endpoint) не включает в ответ папки с суффиксом _ragas
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
-- [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
+- [x] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
 - [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
 ### Phase 3: UI & Docs
@@ -51,7 +51,7 @@
   4. Selector сканов позволяет переключаться между доступными RAGAS-прогонами
   5. Секция "Кастомные метрики" содержит инструкцию на русском и копируемый шаблон Python-класса
 **Plans**: 3 plans
-- [ ] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
+- [x] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
 - [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
 - [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 **UI hint**: yes
