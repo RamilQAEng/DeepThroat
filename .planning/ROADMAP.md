@@ -24,7 +24,7 @@
   5. Python-классы из eval/custom_metrics/ подхватываются автоматически при наличии папки
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
-- [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
+- [x] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
 - [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
 ### Phase 2: API Route
@@ -36,7 +36,7 @@
   2. GET /api/eval/ragas?scan={scanName} возвращает метрики конкретного скана по имени
   3. GET /api/eval (существующий endpoint) не включает в ответ папки с суффиксом _ragas
 **Plans**: 3 plans
-- [ ] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
+- [x] 01-01-PLAN.md — Add RAGAS + langchain dependencies to requirements.txt
 - [ ] 01-02-PLAN.md — Create custom_metrics/ package scaffold with ExampleCustomMetric
 - [ ] 01-03-PLAN.md — Build eval/eval_ragas_metrics.py pipeline (API call, dataset, evaluate, save)
 
