@@ -29,6 +29,8 @@ web/.env.local
 # Data files
 results/history/
 results/latest.parquet
+results/*.json
+results/*.parquet
 *.parquet
 
 # macOS
@@ -64,3 +66,6 @@ results/latest.parquet
 CLAUDE.md
 PLAN.md
 changelog.md
+
+# Client-specific scripts
+scripts/manjerok_*.py

@@ -5,6 +5,7 @@ export default function HomePage() {
       {/* Hero */}
       <div className="text-center space-y-5 max-w-3xl">
         <h1
+          suppressHydrationWarning
           className="text-[64px] font-medium leading-[1.10] tracking-tight text-[#222222]"
           style={{ fontFamily: "var(--font-outfit, Outfit)" }}
         >
@@ -38,6 +39,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-2">
               <h3
+                suppressHydrationWarning
                 className="text-[28px] font-medium leading-tight text-white"
                 style={{ fontFamily: "var(--font-outfit, Outfit)" }}
               >
@@ -72,6 +74,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-2">
               <h3
+                suppressHydrationWarning
                 className="text-[28px] font-medium leading-tight text-white"
                 style={{ fontFamily: "var(--font-outfit, Outfit)" }}
               >
@@ -106,6 +109,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-2">
               <h3
+                suppressHydrationWarning
                 className="text-[28px] font-medium leading-tight text-white"
                 style={{ fontFamily: "var(--font-outfit, Outfit)" }}
               >
