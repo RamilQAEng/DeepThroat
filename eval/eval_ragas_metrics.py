@@ -48,7 +48,7 @@ except ImportError:
 
 from ragas import EvaluationDataset, evaluate, RunConfig
 from ragas.dataset_schema import SingleTurnSample
-from ragas.metrics import (
+from ragas.metrics.collections import (
     Faithfulness, AnswerRelevancy, ContextPrecision,
     ContextRecall, AnswerCorrectness,
 )
@@ -135,11 +135,21 @@ def build_judge(provider: str, model: str) -> LangchainLLMWrapper:
     return LangchainLLMWrapper(llm)
 
 
-def build_embeddings() -> LangchainEmbeddingsWrapper:
-    """OpenAIEmbeddings нужны для AnswerRelevancy (PITFALLS.md #4)."""
+def build_embeddings() -> Optional[LangchainEmbeddingsWrapper]:
+    """OpenAIEmbeddings нужны для AnswerRelevancy.
+
+    Возвращает None если OPENAI_API_KEY не задан — тогда AnswerRelevancy пропускается.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        warnings.warn(
+            "OPENAI_API_KEY не задан — AnswerRelevancy будет пропущен (требует embeddings)",
+            UserWarning,
+        )
+        return None
     return LangchainEmbeddingsWrapper(OpenAIEmbeddings(
         model=EMBEDDINGS_MODEL,
-        api_key=os.environ["OPENAI_API_KEY"],
+        api_key=api_key,
         base_url=os.getenv("OPENAI_BASE_URL"),
     ))
 
@@ -396,11 +406,15 @@ def discover_custom_metrics() -> list:
     return found
 
 
-def select_metrics(dataset: EvaluationDataset, enabled: Optional[dict] = None) -> list:
-    """Выбирает список метрик на основе наличия контекста и reference.
+def select_metrics(
+    dataset: EvaluationDataset,
+    enabled: Optional[dict] = None,
+    has_embeddings: bool = True,
+) -> list:
+    """Выбирает список метрик на основе наличия контекста, reference и embeddings.
 
     Логика graceful-пропуска (RAGAS-04):
-    - AnswerRelevancy: всегда (не требует контекста или reference)
+    - AnswerRelevancy: только если has_embeddings (требует embedding-модели)
     - Faithfulness: только если есть retrieved_contexts
     - ContextPrecision, ContextRecall: только если есть и contexts, и reference
     - AnswerCorrectness: только если есть reference
@@ -409,7 +423,11 @@ def select_metrics(dataset: EvaluationDataset, enabled: Optional[dict] = None) -
     has_context = any(s.retrieved_contexts for s in dataset.samples)
     has_reference = any(s.reference for s in dataset.samples)
 
-    metrics: list = [AnswerRelevancy()]
+    metrics: list = []
+    if has_embeddings:
+        metrics.append(AnswerRelevancy())
+    else:
+        warnings.warn("Embeddings недоступны — пропускаем AnswerRelevancy", UserWarning)
 
     if has_context:
         metrics.append(Faithfulness())
@@ -527,23 +545,27 @@ async def run_pipeline(path: Path, limit: Optional[int] = None) -> None:
         print("[!] После фильтрации невалидных записей датасет пуст.")
         sys.exit(1)
 
-    # 3. LLM + embeddings
+    # 3. LLM + embeddings (embeddings опциональны — нужны только для AnswerRelevancy)
     llm = build_judge(provider=judge_cfg["provider"], model=judge_cfg["model"])
     embeddings = build_embeddings()
 
     # 4. Выбор метрик + автодискавери кастомных
-    metrics = select_metrics(dataset, config.get("metrics"))
+    metrics = select_metrics(dataset, config.get("metrics"), has_embeddings=embeddings is not None)
     print(f"Метрики      : {[m.name for m in metrics]}")
 
     # 5. evaluate — raise_exceptions=False (D-09, PITFALLS.md #6)
     run_config = RunConfig(max_workers=MAX_WORKERS, max_wait=MAX_WAIT)
-    result = evaluate(
+    eval_kwargs: dict = dict(
         dataset=dataset,
         metrics=metrics,
         llm=llm,
-        embeddings=embeddings,
         run_config=run_config,
         raise_exceptions=False,
+    )
+    if embeddings is not None:
+        eval_kwargs["embeddings"] = embeddings
+    result = evaluate(
+        **eval_kwargs,
     )
 
     # 6. Сохранение — суффикс _ragas per D-06
