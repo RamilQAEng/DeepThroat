@@ -478,7 +478,7 @@ def _apply_asyncio_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 
 
-async def run_pipeline(path: Path) -> None:
+async def run_pipeline(path: Path, limit: Optional[int] = None) -> None:
     """Основной async пайплайн RAGAS-оценки."""
     config = load_eval_config()
 
@@ -493,6 +493,10 @@ async def run_pipeline(path: Path) -> None:
         records = load_from_deepeval_run(path)
     else:
         records = load_and_enrich_records(path, config.get("api"))
+
+    if limit is not None:
+        records = records[:limit]
+        print(f"Лимит        : {limit} записей")
     if not records:
         print("[!] Ни одной записи не обогащено — прекращаем.")
         sys.exit(1)
@@ -539,22 +543,23 @@ async def run_pipeline(path: Path) -> None:
     print(f"metrics.json  → {out_path}")
 
 
-def main(input_path: str) -> None:
+def main(input_path: str, limit: Optional[int] = None) -> None:
     """Точка входа: валидирует путь, настраивает asyncio, запускает пайплайн."""
     path = Path(input_path)
     if not path.exists():
         print(f"Путь не найден: {path}")
         sys.exit(1)
-    # Позволить импорт eval.custom_metrics при запуске из любой директории
     project_root = Path(__file__).parent.parent
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     _apply_asyncio_policy()
-    asyncio.run(run_pipeline(path))
+    asyncio.run(run_pipeline(path, limit=limit))
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Использование: python eval/eval_ragas_metrics.py <путь_к_top_k.json>")
-        sys.exit(1)
-    main(sys.argv[1])
+    import argparse
+    parser = argparse.ArgumentParser(description="RAGAS evaluation pipeline")
+    parser.add_argument("input", help="Папка прогона DeepEval или путь к датасету JSON")
+    parser.add_argument("--limit", type=int, default=None, help="Ограничить число записей (для тестирования)")
+    args = parser.parse_args()
+    main(args.input, limit=args.limit)
