@@ -1,0 +1,26 @@
+# Scheduler configuration for automated RAG quality runs
+# Run: python scripts/scheduler.py
+
+schedule: "0 9 * * *"        # cron expression: every day at 09:00
+dataset: "eval/datasets/dataset.json"
+judge: "gpt4o-mini-or"        # judge alias from eval/config/eval_config.yaml
+limit: null                   # null = full dataset, integer = first N records
+fail_below: 0.70              # quality gate threshold (0.0–1.0)
+framework: "ragas"            # "ragas" | "deepeval" | "both"
+
+notifications:
+  telegram:
+    enabled: true
+    # Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env
+    # Get bot token from @BotFather, chat_id from @userinfobot
+    always_notify: false      # true = notify on every run, false = only on failures
+    on_failure: true
+    on_success: true
+
+  # Future: email, slack
+  # email:
+  #   enabled: false
+  #   to: "team@example.com"
+  # slack:
+  #   enabled: false
+  #   webhook_url: "https://hooks.slack.com/..."
