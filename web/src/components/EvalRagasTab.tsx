@@ -7,9 +7,128 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     Activity, ShieldCheck, LayoutGrid, Target, CheckCircle,
-    Rocket, FileText, Sparkles, Star, Download,
+    Rocket, FileText, Sparkles, Star, Download, ChevronDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+// ── Provider Comparison types ─────────────────────────────────────────────────
+interface JudgeRun { dir: string; timestamp: string; total_records: number; metrics: Record<string, number>; }
+interface JudgeEntry { name: string; model: string; provider: string; runs: JudgeRun[]; avg: Record<string, number>; }
+interface ProvidersData { judges: JudgeEntry[]; score_keys: string[]; }
+
+const METRIC_SHORT: Record<string, string> = {
+    faithfulness_score:       "Faithfulness",
+    answer_relevancy_score:   "Ans Relevancy",
+    context_precision_score:  "Ctx Precision",
+    context_recall_score:     "Ctx Recall",
+    answer_correctness_score: "Ans Correctness",
+};
+
+function ProviderComparisonSection() {
+    const [open, setOpen] = useState(false);
+    const [data, setData] = useState<ProvidersData | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const load = () => {
+        if (data || loading) return;
+        setLoading(true);
+        fetch("/api/eval/providers")
+            .then(r => r.json())
+            .then((d: ProvidersData) => { setData(d); setLoading(false); })
+            .catch(e => { setError(e.message); setLoading(false); });
+    };
+
+    const toggle = () => { setOpen(o => !o); if (!open) load(); };
+
+    const { judges = [], score_keys = [] } = data ?? {};
+    const presentKeys = score_keys.length > 0 ? score_keys : Object.keys(METRIC_SHORT);
+
+    // Find best judge per metric
+    const bestJudge: Record<string, string> = {};
+    for (const key of presentKeys) {
+        let best: JudgeEntry | null = null;
+        for (const j of judges) {
+            if (j.avg[key] != null && (best == null || j.avg[key] > best.avg[key])) best = j;
+        }
+        if (best) bestJudge[key] = best.name;
+    }
+
+    return (
+        <div className="border border-[#e5e7eb] rounded-2xl overflow-hidden">
+            <button
+                onClick={toggle}
+                className="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-[#f9fafb] transition-colors text-left"
+            >
+                <span className="text-sm font-semibold text-[#222222]">Сравнение провайдеров</span>
+                <ChevronDown className={`h-4 w-4 text-[#8e8e93] transition-transform ${open ? "rotate-180" : ""}`} />
+            </button>
+
+            {open && (
+                <div className="px-6 pb-6 bg-white border-t border-[#f0f0f0]">
+                    {loading && <p className="text-sm text-[#8e8e93] pt-4">Загрузка…</p>}
+                    {error && <p className="text-sm text-red-500 pt-4">{error}</p>}
+
+                    {!loading && !error && judges.length === 0 && (
+                        <div className="pt-4 space-y-2 text-sm text-[#555]">
+                            <p>Нет прогонов с тегом провайдера.</p>
+                            <p className="font-mono text-xs bg-[#f5f5f5] rounded px-3 py-2 whitespace-pre">
+                                {`python eval/run_provider_comparison.py \\\n  eval/datasets/dataset.json \\\n  --judges gpt4o-mini-or,qwen-72b-or \\\n  --limit 5`}
+                            </p>
+                        </div>
+                    )}
+
+                    {!loading && judges.length > 0 && (
+                        <div className="pt-4 overflow-x-auto">
+                            <table className="w-full text-sm border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th className="text-left text-xs font-semibold text-[#8e8e93] uppercase tracking-wide py-2 pr-4 w-40">Метрика</th>
+                                        {judges.map(j => (
+                                            <th key={j.name} className="text-center text-xs font-semibold text-[#222222] py-2 px-3 min-w-[110px]">
+                                                <div>{j.name}</div>
+                                                <div className="text-[#8e8e93] font-normal normal-case tracking-normal">{j.model.split("/").pop()}</div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {presentKeys.map(key => (
+                                        <tr key={key} className="border-t border-[#f0f0f0]">
+                                            <td className="py-2 pr-4 text-[#444] text-xs font-medium">
+                                                {METRIC_SHORT[key] ?? key}
+                                            </td>
+                                            {judges.map(j => {
+                                                const val = j.avg[key];
+                                                const isBest = bestJudge[key] === j.name;
+                                                const pct = val != null ? `${(val * 100).toFixed(1)}%` : "—";
+                                                const color = val == null ? "text-[#ccc]"
+                                                    : val >= 0.7 ? "text-emerald-600"
+                                                    : val >= 0.5 ? "text-amber-600"
+                                                    : "text-red-500";
+                                                return (
+                                                    <td key={j.name} className={`py-2 px-3 text-center text-sm font-semibold ${color} ${isBest ? "bg-emerald-50 rounded" : ""}`}>
+                                                        {pct}{isBest && val != null ? " ★" : ""}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                    <tr className="border-t-2 border-[#e5e7eb]">
+                                        <td className="py-2 pr-4 text-[#888] text-xs font-semibold uppercase tracking-wide">Прогонов</td>
+                                        {judges.map(j => (
+                                            <td key={j.name} className="py-2 px-3 text-center text-xs text-[#8e8e93]">{j.runs.length}</td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 const PASS_THRESHOLD = 0.7;
 
@@ -460,6 +579,10 @@ export default function EvalRagasTab() {
                     })}
                 </Accordion>
             </div>
+
+            {/* Provider comparison — lazy loaded on expand */}
+            <ProviderComparisonSection />
+
         </div>
     );
 }

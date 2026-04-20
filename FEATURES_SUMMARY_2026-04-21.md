@@ -1,7 +1,7 @@
 # DeepThroath v2 — Features Summary
 
 Реализованные коммерческие фичи поверх RAGAS-интеграции.
-Каждая фича — отдельная ветка, ветки цепочкой: `feat/ragas-eval` → `feat/scan-comparison` → `feat/scheduled-runs` → `feat/pdf-report`.
+Каждая фича — отдельная ветка, ветки цепочкой: `feat/ragas-eval` → `feat/scan-comparison` → `feat/scheduled-runs` → `feat/pdf-report` → `feat/provider-comparison`.
 
 ---
 
@@ -161,6 +161,54 @@ open report.pdf
 
 ---
 
+## Фича 5 — Provider Comparison Dashboard
+**Ветка:** `feat/provider-comparison`
+
+Сравнение нескольких LLM-судей на одном датасете: какой провайдер даёт более высокие/низкие оценки, где расхождения.
+
+### Что добавлено
+- `eval/eval_ragas_metrics.py` — флаг `--judge <alias>` переопределяет судью из `targets.yaml`, тегирует папку прогона и сохраняет `meta.json` с метаданными судьи
+- `eval/run_provider_comparison.py` — запускает eval параллельно для нескольких судей, печатает ASCII-таблицу сравнения, сохраняет `eval/results/provider_comparison_<dataset>.json`
+- `web/src/app/api/eval/providers/route.ts` — GET `/api/eval/providers`, группирует все прогоны с `meta.json` по судье, возвращает avg метрик
+- `EvalRagasTab.tsx` — коллапсируемая секция «Сравнение провайдеров» внизу страницы, лениво загружается при раскрытии, показывает таблицу с подсветкой лучшего судьи (★)
+
+### Ручная проверка
+```bash
+# Посмотреть доступных судей
+python eval/run_provider_comparison.py --list-judges
+
+# Запустить сравнение 2 судей с лимитом 3 записи
+python eval/run_provider_comparison.py eval/datasets/dataset.json \
+  --judges gpt4o-mini-or,qwen-72b-or \
+  --limit 3
+
+# Запустить один прогон с конкретным судьёй
+python eval/eval_ragas_metrics.py eval/datasets/dataset.json \
+  --judge gpt4o-mini-or --limit 3
+
+# API — посмотреть все теги провайдеров
+curl http://localhost:3000/api/eval/providers | python3 -m json.tool
+
+# Фронт
+# http://localhost:3000/eval → вкладка RAGAS → прокрутить вниз
+# → секция «Сравнение провайдеров» → раскрыть
+# → таблица метрик по судьям, лучший отмечен ★
+```
+
+### Формат `meta.json` (создаётся в каждом прогоне с --judge)
+```json
+{
+  "judge_name": "gpt4o-mini-or",
+  "judge_model": "openai/gpt-4o-mini",
+  "provider": "openrouter",
+  "dataset": "/path/to/dataset.json",
+  "timestamp": "20260421_090000",
+  "total_records": 10
+}
+```
+
+---
+
 ## Быстрый smoke-test всех фич
 
 ```bash
@@ -186,4 +234,9 @@ python scripts/scheduler.py --run-now --limit=3
 # Открыть http://localhost:3000/eval
 # → вкладка RAGAS → кнопка Export PDF → файл скачался
 # → вкладка DeepEval → подвкладка Сравнение → выбрать 2 прогона → Сравнить
+
+# 6. Provider comparison
+python eval/run_provider_comparison.py eval/datasets/dataset.json \
+  --judges gpt4o-mini-or,qwen-72b-or --limit 3
+# → вкладка RAGAS → секция «Сравнение провайдеров» → раскрыть → таблица с ★
 ```

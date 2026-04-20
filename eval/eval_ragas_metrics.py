@@ -621,7 +621,26 @@ def _apply_asyncio_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 
 
-async def run_pipeline(path: Path, limit: Optional[int] = None, fail_below: Optional[float] = None) -> None:
+def resolve_judge_by_alias(alias: str) -> dict:
+    """Ищет судью по имени в targets.yaml. Бросает ValueError если не найден."""
+    if not TARGETS_PATH.exists():
+        raise ValueError(f"targets.yaml не найден: {TARGETS_PATH}")
+    with open(TARGETS_PATH, encoding="utf-8") as f:
+        targets_cfg = yaml.safe_load(f) or {}
+    targets = {t["name"]: t for t in targets_cfg.get("targets", [])}
+    if alias not in targets:
+        available = list(targets.keys())
+        raise ValueError(f"Судья '{alias}' не найден в targets.yaml. Доступные: {available}")
+    t = targets[alias]
+    return {"provider": t["provider"], "model": t["model"], "name": alias}
+
+
+async def run_pipeline(
+    path: Path,
+    limit: Optional[int] = None,
+    fail_below: Optional[float] = None,
+    judge_override: Optional[str] = None,
+) -> None:
     """Основной async пайплайн RAGAS-оценки.
 
     RAGAS 0.4.3: evaluate() несовместима с метриками из ragas.metrics.collections
@@ -629,7 +648,11 @@ async def run_pipeline(path: Path, limit: Optional[int] = None, fail_below: Opti
     Решение: вызываем abatch_score() на каждой метрике напрямую.
     """
     config = load_eval_config()
-    judge_cfg = resolve_judge_config(config)
+    judge_cfg = (
+        resolve_judge_by_alias(judge_override)
+        if judge_override
+        else resolve_judge_config(config)
+    )
 
     is_deepeval_run = path.is_dir()
     print(f"Режим        : {'DeepEval run (без API)' if is_deepeval_run else 'датасет JSON (с API)'}")
@@ -690,8 +713,22 @@ async def run_pipeline(path: Path, limit: Optional[int] = None, fail_below: Opti
     # 8. Сохранение — суффикс _ragas per D-06
     stem = path.name if path.is_dir() else path.stem
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = OUTPUT_DIR / f"{ts}_{stem}_ragas"
+    judge_tag = f"_{judge_cfg['name']}" if judge_override else ""
+    run_dir = OUTPUT_DIR / f"{ts}_{stem}{judge_tag}_ragas"
     run_dir.mkdir(parents=True, exist_ok=True)
+
+    # meta.json — для provider comparison dashboard
+    meta = {
+        "judge_name": judge_cfg["name"],
+        "judge_model": judge_cfg["model"],
+        "provider": judge_cfg["provider"],
+        "dataset": str(path),
+        "timestamp": ts,
+        "total_records": len(records),
+    }
+    (run_dir / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     out_path = save_results(records, all_scores, run_dir)
     print(f"\nПапка прогона → {run_dir}")
@@ -716,7 +753,12 @@ async def run_pipeline(path: Path, limit: Optional[int] = None, fail_below: Opti
             print(f"\n[QUALITY GATE PASSED] Все метрики ≥ {fail_below}")
 
 
-def main(input_path: str, limit: Optional[int] = None, fail_below: Optional[float] = None) -> None:
+def main(
+    input_path: str,
+    limit: Optional[int] = None,
+    fail_below: Optional[float] = None,
+    judge_override: Optional[str] = None,
+) -> None:
     """Точка входа: валидирует путь, настраивает asyncio, запускает пайплайн."""
     path = Path(input_path)
     if not path.exists():
@@ -726,7 +768,7 @@ def main(input_path: str, limit: Optional[int] = None, fail_below: Optional[floa
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     _apply_asyncio_policy()
-    asyncio.run(run_pipeline(path, limit=limit, fail_below=fail_below))
+    asyncio.run(run_pipeline(path, limit=limit, fail_below=fail_below, judge_override=judge_override))
 
 
 if __name__ == "__main__":
@@ -738,5 +780,9 @@ if __name__ == "__main__":
         "--fail-below", type=float, default=None, metavar="THRESHOLD",
         help="CI/CD quality gate: завершить с exit code 1 если avg любой метрики < THRESHOLD (например 0.75)"
     )
+    parser.add_argument(
+        "--judge", type=str, default=None, metavar="ALIAS",
+        help="Переопределить судью по имени из targets.yaml (например gpt4o-mini-or, qwen-72b-or)"
+    )
     args = parser.parse_args()
-    main(args.input, limit=args.limit, fail_below=args.fail_below)
+    main(args.input, limit=args.limit, fail_below=args.fail_below, judge_override=args.judge)
