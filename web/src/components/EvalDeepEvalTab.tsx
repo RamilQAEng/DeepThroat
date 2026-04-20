@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, LayoutGrid, AlertTriangle, ShieldCheck, FileText, Download, Rocket, Printer } from "lucide-react";
+import { Activity, LayoutGrid, AlertTriangle, ShieldCheck, FileText, Download, Rocket, Printer, ArrowUp, ArrowDown, Minus, GitCompare } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -18,6 +18,13 @@ export default function EvalDeepEvalTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedScan, setSelectedScan] = useState("latest");
+
+  // Comparison state
+  const [cmpScanA, setCmpScanA] = useState<string>("");
+  const [cmpScanB, setCmpScanB] = useState<string>("");
+  const [cmpData, setCmpData] = useState<any | null>(null);
+  const [cmpLoading, setCmpLoading] = useState(false);
+  const [cmpError, setCmpError] = useState<string | null>(null);
 
   const activeScan = selectedScan === "latest"
     ? (data?.allScans?.[0]?.value ?? null)
@@ -35,6 +42,21 @@ export default function EvalDeepEvalTab() {
   const openPdfReport = () => {
     if (typeof window === "undefined") return;
     window.print();
+  };
+
+  const runComparison = () => {
+    if (!cmpScanA || !cmpScanB) return;
+    setCmpLoading(true);
+    setCmpError(null);
+    setCmpData(null);
+    fetch(`/api/eval/compare?scan1=${encodeURIComponent(cmpScanA)}&scan2=${encodeURIComponent(cmpScanB)}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || "HTTP " + res.status);
+        return json;
+      })
+      .then((json) => { setCmpData(json); setCmpLoading(false); })
+      .catch((err) => { setCmpError(err.message); setCmpLoading(false); });
   };
 
   useEffect(() => {
@@ -419,9 +441,170 @@ export default function EvalDeepEvalTab() {
 
         {/* Comparison */}
         <TabsContent value="comparison">
-          <div className="bg-[#f2f3f5] rounded-[24px] border border-[#e5e7eb] p-8 shadow-[rgba(0,0,0,0.08)_0px_4px_6px]">
-            <h3 className="text-2xl font-bold text-[#222222] mb-4">Сравнение сканов</h3>
-            <p className="text-[#45515e] mb-6">Сравнение метрик между разными прогонами тестирования.</p>
+          <div className="space-y-6">
+            {/* Scan selectors */}
+            <div className="bg-[#f2f3f5] rounded-[24px] border border-[#e5e7eb] p-6 shadow-[rgba(0,0,0,0.08)_0px_4px_6px]">
+              <h3 className="text-2xl font-bold text-[#222222] mb-2 flex items-center gap-2">
+                <GitCompare className="w-6 h-6 text-purple-400" /> Сравнение сканов
+              </h3>
+              <p className="text-[#45515e] mb-6 text-sm">Выберите два прогона — увидите дельту по каждой метрике и поперстроечное сравнение.</p>
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-semibold text-[#8e8e93] uppercase tracking-wide">Скан A (базовый)</label>
+                  <Select value={cmpScanA} onValueChange={setCmpScanA}>
+                    <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222] h-11 rounded-lg text-sm font-medium">
+                      <SelectValue placeholder="Выберите скан A" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-xl">
+                      {(data?.allScans ?? []).map((s: any) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-semibold text-[#8e8e93] uppercase tracking-wide">Скан B (новый)</label>
+                  <Select value={cmpScanB} onValueChange={setCmpScanB}>
+                    <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222] h-11 rounded-lg text-sm font-medium">
+                      <SelectValue placeholder="Выберите скан B" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-xl">
+                      {(data?.allScans ?? []).map((s: any) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={runComparison}
+                  disabled={!cmpScanA || !cmpScanB || cmpLoading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 h-11 font-semibold shadow-md shadow-purple-600/20 transition-all"
+                >
+                  {cmpLoading ? <Activity className="w-4 h-4 animate-spin mr-2" /> : <GitCompare className="w-4 h-4 mr-2" />}
+                  {cmpLoading ? "Сравниваем..." : "Сравнить"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Error */}
+            {cmpError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{cmpError}</div>
+            )}
+
+            {/* Results */}
+            {cmpData && (() => {
+              const { summary_a, summary_b, summary_delta, rows } = cmpData;
+              const METRIC_LABELS: Record<string, string> = {
+                answer_relevancy_score: "Answer Relevancy",
+                faithfulness_score: "Faithfulness",
+                contextual_precision_score: "Ctx Precision",
+                contextual_recall_score: "Ctx Recall",
+              };
+              const METRIC_COLORS: Record<string, string> = {
+                answer_relevancy_score: "text-blue-600",
+                faithfulness_score: "text-pink-600",
+                contextual_precision_score: "text-cyan-600",
+                contextual_recall_score: "text-violet-600",
+              };
+
+              const DeltaBadge = ({ val }: { val: number | null }) => {
+                if (val === null) return <span className="text-[#8e8e93] text-sm">—</span>;
+                const pct = (val * 100).toFixed(1);
+                if (Math.abs(val) < 0.005) return <span className="flex items-center gap-1 text-[#8e8e93] text-sm font-medium"><Minus className="w-3 h-3" />{pct}%</span>;
+                if (val > 0) return <span className="flex items-center gap-1 text-emerald-600 text-sm font-semibold"><ArrowUp className="w-3 h-3" />+{pct}%</span>;
+                return <span className="flex items-center gap-1 text-red-500 text-sm font-semibold"><ArrowDown className="w-3 h-3" />{pct}%</span>;
+              };
+
+              return (
+                <div className="space-y-6">
+                  {/* Summary table */}
+                  <div className="bg-[#f2f3f5] rounded-[24px] border border-[#e5e7eb] p-6 shadow-[rgba(0,0,0,0.08)_0px_4px_6px] overflow-x-auto">
+                    <h4 className="text-lg font-bold text-[#222222] mb-4">Сводка по метрикам</h4>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#e5e7eb]">
+                          <th className="text-left py-2 pr-4 font-semibold text-[#8e8e93]">Метрика</th>
+                          <th className="text-center py-2 px-4 font-semibold text-[#45515e]">Скан A</th>
+                          <th className="text-center py-2 px-4 font-semibold text-[#45515e]">Скан B</th>
+                          <th className="text-center py-2 px-4 font-semibold text-[#45515e]">Дельта</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(cmpData.score_keys as string[]).map((key) => {
+                          const va: number | null = summary_a.avg[key];
+                          const vb: number | null = summary_b.avg[key];
+                          const vd: number | null = summary_delta[key];
+                          return (
+                            <tr key={key} className="border-b border-[#e5e7eb] last:border-0">
+                              <td className={`py-3 pr-4 font-semibold ${METRIC_COLORS[key] ?? "text-[#222222]"}`}>{METRIC_LABELS[key] ?? key}</td>
+                              <td className="py-3 px-4 text-center font-mono text-[#222222]">{va !== null ? (va * 100).toFixed(1) + "%" : "—"}</td>
+                              <td className="py-3 px-4 text-center font-mono text-[#222222]">{vb !== null ? (vb * 100).toFixed(1) + "%" : "—"}</td>
+                              <td className="py-3 px-4 text-center"><DeltaBadge val={vd} /></td>
+                            </tr>
+                          );
+                        })}
+                        <tr className="bg-white/60">
+                          <td className="py-3 pr-4 font-semibold text-[#222222]">Пройдено</td>
+                          <td className="py-3 px-4 text-center font-semibold text-[#222222]">{summary_a.passed}/{summary_a.total}</td>
+                          <td className="py-3 px-4 text-center font-semibold text-[#222222]">{summary_b.passed}/{summary_b.total}</td>
+                          <td className="py-3 px-4 text-center">
+                            <DeltaBadge val={summary_a.total > 0 ? (summary_b.passed / summary_b.total) - (summary_a.passed / summary_a.total) : null} />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Per-row diff */}
+                  <div className="bg-[#f2f3f5] rounded-[24px] border border-[#e5e7eb] p-6 shadow-[rgba(0,0,0,0.08)_0px_4px_6px]">
+                    <h4 className="text-lg font-bold text-[#222222] mb-4">Поперстроечное сравнение</h4>
+                    <div className="space-y-3">
+                      {(rows as any[]).map((row, idx) => {
+                        const hasDelta = Object.values(row.delta as Record<string, number | null>).some(
+                          (v) => v !== null && Math.abs(v as number) >= 0.005
+                        );
+                        const improved = Object.values(row.delta as Record<string, number | null>).filter(
+                          (v) => v !== null && (v as number) > 0.005
+                        ).length;
+                        const degraded = Object.values(row.delta as Record<string, number | null>).filter(
+                          (v) => v !== null && (v as number) < -0.005
+                        ).length;
+                        const borderColor = degraded > 0 ? "border-red-200" : improved > 0 ? "border-emerald-200" : "border-[#e5e7eb]";
+                        const bgColor = degraded > 0 ? "bg-red-50" : improved > 0 ? "bg-emerald-50/50" : "bg-white";
+                        return (
+                          <div key={idx} className={`${bgColor} ${borderColor} border rounded-xl p-4`}>
+                            <div className="flex items-start justify-between gap-4 mb-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Badge variant="outline" className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] font-bold text-xs shrink-0">{row.id}</Badge>
+                                <p className="text-sm font-medium text-[#222222] truncate">{row.query}</p>
+                              </div>
+                              {!hasDelta && <Badge variant="outline" className="text-[#8e8e93] border-[#e5e7eb] text-xs shrink-0">без изменений</Badge>}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {(cmpData.score_keys as string[]).map((key) => {
+                                const va: number | null = row.scores_a[key];
+                                const vb: number | null = row.scores_b[key];
+                                const vd: number | null = row.delta[key];
+                                if (va === null && vb === null) return null;
+                                return (
+                                  <div key={key} className="flex items-center gap-1.5 text-xs bg-white/80 rounded-lg px-2 py-1 border border-[#e5e7eb]">
+                                    <span className={`font-semibold ${METRIC_COLORS[key] ?? ""}`}>{(METRIC_LABELS[key] ?? key).replace(" ", "\u00A0")}</span>
+                                    <span className="text-[#8e8e93]">{va !== null ? (va * 100).toFixed(0) + "%" : "—"}</span>
+                                    <span className="text-[#8e8e93]">→</span>
+                                    <span className="text-[#222222] font-medium">{vb !== null ? (vb * 100).toFixed(0) + "%" : "—"}</span>
+                                    <DeltaBadge val={vd} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </TabsContent>
 
@@ -432,7 +615,7 @@ export default function EvalDeepEvalTab() {
               <FileText className="w-6 h-6 text-purple-400" /> Детальные ответы модели
             </h2>
 
-            <Accordion className="w-full space-y-4">
+            <Accordion type="multiple" className="w-full space-y-4">
               {data?.metrics.map((m: any, idx: number) => {
                 const isFail = m.answer_relevancy_passed === false || m.faithfulness_passed === false;
                 return (

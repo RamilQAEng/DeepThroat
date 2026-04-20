@@ -314,7 +314,7 @@ export default function EvalRagasTab() {
                     <FileText className="w-6 h-6 text-emerald-400" /> Детальные результаты RAGAS
                 </h2>
 
-                <Accordion className="w-full space-y-4">
+                <Accordion type="multiple" className="w-full space-y-4">
                     {data?.metrics.map((m, idx) => {
                         const coreScores = [
                             m.faithfulness_score,
