@@ -664,7 +664,7 @@ def evaluate_record(rec: dict, index: int, total: int,
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def main(input_path: str):
+def main(input_path: str, fail_below: float | None = None):
     path = Path(input_path)
     if not path.exists():
         print(f"Файл не найден: {path}")
@@ -781,6 +781,31 @@ def main(input_path: str):
     clear_checkpoint(run_dir)
     print("Чекпоинт удалён.")
 
+    # Quality gate: --fail-below
+    if fail_below is not None:
+        score_map = {
+            "answer_relevancy": ar_scores,
+            "faithfulness": fa_scores,
+            "contextual_precision": cp_scores,
+            "contextual_recall": cr_scores,
+        }
+        failed_metrics: list[str] = []
+        print(f"\n{'='*55}")
+        print(f"Quality gate: порог={fail_below}")
+        for name, scores in score_map.items():
+            if not scores:
+                continue
+            avg = sum(scores) / len(scores)
+            status = "✓" if avg >= fail_below else "✗"
+            print(f"  [{status}] {name}: avg={avg:.3f}")
+            if avg < fail_below:
+                failed_metrics.append(f"{name}={avg:.3f}")
+        if failed_metrics:
+            print(f"\n[QUALITY GATE FAILED] Метрики ниже порога {fail_below}: {', '.join(failed_metrics)}")
+            sys.exit(1)
+        else:
+            print(f"\n[QUALITY GATE PASSED] Все метрики ≥ {fail_below}")
+
 
 # ── Programmatic entry point ──────────────────────────────────────────────────
 
@@ -826,30 +851,29 @@ def run_eval(input_path: str, judge_config: dict, max_workers: int = 10,
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Использование:")
-        print("  python eval_rag_metrics.py <путь_к_файлу.json>")
-        print("  python eval_rag_metrics.py --report-only <папка_прогона>")
-        sys.exit(1)
+    import argparse as _argparse
+    _parser = _argparse.ArgumentParser(description="DeepEval RAG evaluation pipeline")
+    _parser.add_argument("input", nargs="?", help="Путь к входному JSON файлу")
+    _parser.add_argument("--report-only", metavar="RUN_DIR", help="Перегенерировать отчёт из готовой папки прогона")
+    _parser.add_argument(
+        "--fail-below", type=float, default=None, metavar="THRESHOLD",
+        help="CI/CD quality gate: exit code 1 если avg любой метрики < THRESHOLD (например 0.75)"
+    )
+    _args = _parser.parse_args()
 
-    if sys.argv[1] == "--report-only":
-        if len(sys.argv) < 3:
-            print("Укажи папку прогона: python eval_rag_metrics.py --report-only <папка>")
-            sys.exit(1)
-        run_dir = Path(sys.argv[2])
+    if _args.report_only:
+        run_dir = Path(_args.report_only)
         metrics_file = run_dir / "metrics.json"
         if not metrics_file.exists():
             print(f"Файл не найден: {metrics_file}")
             sys.exit(1)
         with open(metrics_file, encoding="utf-8") as f:
             results = json.load(f)
-        ts = run_dir.name[:15]   # берём timestamp из имени папки
-        stem = run_dir.name[16:] # берём имя входного файла из имени папки
-        # Ищем датасет рядом с папкой результатов
+        ts = run_dir.name[:15]
+        stem = run_dir.name[16:]
         datasets_dir = run_dir.parent.parent / "datasets"
         candidate = datasets_dir / f"{stem}.json"
         input_path = candidate if candidate.exists() else None
-        # Считаем пропущенные из errors_log.json если есть
         errors_log_file = run_dir / "errors_log.json"
         if errors_log_file.exists():
             with open(errors_log_file, encoding="utf-8") as _ef:
@@ -863,5 +887,8 @@ if __name__ == "__main__":
                                       run_dir,
                                       input_path=input_path)
         print(f"Отчёт перегенерирован → {report_path}")
+    elif _args.input:
+        main(_args.input, fail_below=_args.fail_below)
     else:
-        main(sys.argv[1])
+        _parser.print_help()
+        sys.exit(1)

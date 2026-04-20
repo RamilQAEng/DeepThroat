@@ -621,7 +621,7 @@ def _apply_asyncio_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 
 
-async def run_pipeline(path: Path, limit: Optional[int] = None) -> None:
+async def run_pipeline(path: Path, limit: Optional[int] = None, fail_below: Optional[float] = None) -> None:
     """Основной async пайплайн RAGAS-оценки.
 
     RAGAS 0.4.3: evaluate() несовместима с метриками из ragas.metrics.collections
@@ -697,8 +697,26 @@ async def run_pipeline(path: Path, limit: Optional[int] = None) -> None:
     print(f"\nПапка прогона → {run_dir}")
     print(f"metrics.json  → {out_path}")
 
+    # Quality gate: --fail-below
+    if fail_below is not None:
+        failed_metrics: list[str] = []
+        for metric_name, scores in all_scores.items():
+            valid = [s for s in scores if s is not None]
+            if not valid:
+                continue
+            avg = sum(valid) / len(valid)
+            status = "✓" if avg >= fail_below else "✗"
+            print(f"  [{status}] {metric_name}: avg={avg:.3f} (порог={fail_below})")
+            if avg < fail_below:
+                failed_metrics.append(f"{metric_name}={avg:.3f}")
+        if failed_metrics:
+            print(f"\n[QUALITY GATE FAILED] Метрики ниже порога {fail_below}: {', '.join(failed_metrics)}")
+            sys.exit(1)
+        else:
+            print(f"\n[QUALITY GATE PASSED] Все метрики ≥ {fail_below}")
 
-def main(input_path: str, limit: Optional[int] = None) -> None:
+
+def main(input_path: str, limit: Optional[int] = None, fail_below: Optional[float] = None) -> None:
     """Точка входа: валидирует путь, настраивает asyncio, запускает пайплайн."""
     path = Path(input_path)
     if not path.exists():
@@ -708,7 +726,7 @@ def main(input_path: str, limit: Optional[int] = None) -> None:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     _apply_asyncio_policy()
-    asyncio.run(run_pipeline(path, limit=limit))
+    asyncio.run(run_pipeline(path, limit=limit, fail_below=fail_below))
 
 
 if __name__ == "__main__":
@@ -716,5 +734,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RAGAS evaluation pipeline")
     parser.add_argument("input", help="Папка прогона DeepEval или путь к датасету JSON")
     parser.add_argument("--limit", type=int, default=None, help="Ограничить число записей (для тестирования)")
+    parser.add_argument(
+        "--fail-below", type=float, default=None, metavar="THRESHOLD",
+        help="CI/CD quality gate: завершить с exit code 1 если avg любой метрики < THRESHOLD (например 0.75)"
+    )
     args = parser.parse_args()
-    main(args.input, limit=args.limit)
+    main(args.input, limit=args.limit, fail_below=args.fail_below)
