@@ -14,6 +14,11 @@ export function ComparisonTab({ allScans }: { allScans: {label: string, value: s
   const [dataB, setDataB] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Helper to get label by value
+  const getLabelByValue = (value: string) => {
+    return allScans.find(scan => scan.value === value)?.label || value;
+  };
+
   useEffect(() => {
     if (!scanA || !scanB) return;
     setLoading(true);
@@ -106,12 +111,14 @@ export function ComparisonTab({ allScans }: { allScans: {label: string, value: s
            <div className="flex-1 space-y-2">
                <label className="text-sm font-medium text-[#45515e]">Скан A (базовый)</label>
                <Select value={scanA} onValueChange={(val) => val && setScanA(val)}>
-                 <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222]">
-                   <SelectValue placeholder="Выберите базовый скан" />
+                 <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-sm">
+                   <SelectValue placeholder="Выберите базовый скан">
+                     {getLabelByValue(scanA)}
+                   </SelectValue>
                  </SelectTrigger>
-                 <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
+                 <SelectContent className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-xl">
                    {allScans.map(scan => (
-                     <SelectItem key={scan.value} value={scan.value}>{scan.label}</SelectItem>
+                     <SelectItem key={scan.value} value={scan.value} className="rounded-md">{scan.label}</SelectItem>
                    ))}
                  </SelectContent>
                </Select>
@@ -120,12 +127,14 @@ export function ComparisonTab({ allScans }: { allScans: {label: string, value: s
            <div className="flex-1 space-y-2">
                <label className="text-sm font-medium text-[#45515e]">Скан B (новый)</label>
                <Select value={scanB} onValueChange={(val) => val && setScanB(val)}>
-                 <SelectTrigger className="bg-white border-[#e5e7eb] border-l-[#1456f0] text-[#222222]">
-                   <SelectValue placeholder="Выберите новый скан" />
+                 <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-sm">
+                   <SelectValue placeholder="Выберите новый скан">
+                     {getLabelByValue(scanB)}
+                   </SelectValue>
                  </SelectTrigger>
-                 <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
+                 <SelectContent className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-xl">
                    {allScans.map(scan => (
-                     <SelectItem key={scan.value} value={scan.value}>{scan.label}</SelectItem>
+                     <SelectItem key={scan.value} value={scan.value} className="rounded-md">{scan.label}</SelectItem>
                    ))}
                  </SelectContent>
                </Select>

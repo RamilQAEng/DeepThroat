@@ -5,6 +5,8 @@ import { OverallPassratePie, AsrByOwaspBar, PassrateTrendLine } from "@/componen
 import { LogsTable } from "@/components/LogsTable";
 import { ComparisonTab } from "@/components/ComparisonTab";
 import { ExportActions } from "@/components/ExportActions";
+import { OwaspCategoryPanel } from "@/components/OwaspCategoryPanel";
+import { OwaspInfoDialog } from "@/components/OwaspInfoDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getOwaspCategory, OWASPCategory, SEVERITY_WEIGHTS, SEVERITY_BADGE } from "@/lib/owasp";
@@ -151,18 +153,21 @@ export default function Dashboard() {
               DeepThroath
             </h1>
             <p className="text-[#45515e] mt-3 text-lg font-medium">Аналитика безопасности LLM</p>
+            <div className="mt-3">
+              <OwaspInfoDialog />
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-4 no-print">
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-3 no-print">
             {data?.allScans && data.allScans.length > 0 && (
-              <div className="w-72">
+              <div className="w-full md:w-[220px]">
                 <Select value={selectedScan} onValueChange={(val) => val && setSelectedScan(val)}>
-                  <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222]">
+                  <SelectTrigger className="bg-white border-[#e5e7eb] text-[#222222] shadow-[rgba(0,0,0,0.08)_0px_2px_4px] hover:shadow-[rgba(0,0,0,0.12)_0px_4px_8px] transition-all rounded-lg h-11 px-4 font-medium text-sm">
                     <SelectValue placeholder="Выберите скан" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
+                  <SelectContent className="bg-white border-[#e5e7eb] text-[#222222] rounded-lg shadow-xl">
                     {data.allScans.map((scan: any) => (
-                      <SelectItem key={scan.value} value={scan.value}>{scan.label}</SelectItem>
+                      <SelectItem key={scan.value} value={scan.value} className="rounded-md">{scan.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -171,7 +176,11 @@ export default function Dashboard() {
 
             <ExportActions data={data} />
 
-            <Button onClick={runScan} disabled={running} className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20">
+            <Button
+              onClick={runScan}
+              disabled={running}
+              className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 rounded-lg px-5 py-2.5 h-11 font-semibold whitespace-nowrap"
+            >
                {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
                {running ? "Выполнение..." : "Запустить Скан"}
             </Button>
@@ -247,12 +256,12 @@ export default function Dashboard() {
 
         {/* Tabs Container */}
         <Tabs defaultValue="overview" className="space-y-8">
-            <TabsList className="bg-[#f2f3f5] shadow-inner border border-[#e5e7eb] p-2 rounded-xl gap-2 h-auto">
-               <TabsTrigger value="overview" className="px-6 py-3 text-base rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Введение/Обзор</TabsTrigger>
-               <TabsTrigger value="owasp" className="px-6 py-3 text-base rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Безопасность по OWASP</TabsTrigger>
-               <TabsTrigger value="trend" className="px-6 py-3 text-base rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Тренд Истории</TabsTrigger>
-               <TabsTrigger value="comparison" className="px-6 py-3 text-base rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Сравнение Сканов</TabsTrigger>
-               <TabsTrigger value="logs" className="px-6 py-3 text-base rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Логи и Детали</TabsTrigger>
+            <TabsList className="bg-[#f2f3f5] shadow-inner border border-[#e5e7eb] p-2 rounded-lg gap-2 h-auto">
+               <TabsTrigger value="overview" className="px-6 py-3 text-base rounded-md data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Введение/Обзор</TabsTrigger>
+               <TabsTrigger value="owasp" className="px-6 py-3 text-base rounded-md data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Безопасность по OWASP</TabsTrigger>
+               <TabsTrigger value="trend" className="px-6 py-3 text-base rounded-md data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Тренд Истории</TabsTrigger>
+               <TabsTrigger value="comparison" className="px-6 py-3 text-base rounded-md data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Сравнение Сканов</TabsTrigger>
+               <TabsTrigger value="logs" className="px-6 py-3 text-base rounded-md data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-[rgba(0,0,0,0.08)_0px_2px_4px] data-[state=active]:shadow-lg text-[#45515e] hover:text-[#222222] font-medium drop-shadow-sm transition-all">Логи и Детали</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
@@ -263,33 +272,7 @@ export default function Dashboard() {
                      </div>
                   </div>
                   <div className="lg:col-span-1">
-                    <div className="bg-[#f2f3f5] rounded-[24px] border border-[#e5e7eb] p-3 shadow-[rgba(0,0,0,0.08)_0px_4px_6px] h-full">
-                      <Card className="h-full border-0 bg-transparent shadow-none">
-                        <CardHeader>
-                          <CardTitle className="text-2xl font-bold text-[#222222] drop-shadow-sm">Статус по категориям</CardTitle>
-                          <CardDescription className="text-[#45515e] text-base font-medium">Сводка наихудших показателей (ASR) по каждой категории.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            {sortedCats.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between p-5 rounded-xl bg-[#f0f0f0] border border-[#e5e7eb] hover:bg-[#f0f0f0] transition-colors group cursor-pointer shadow-sm hover:shadow-md">
-                                <div className="flex items-center gap-5">
-                                  <span className="text-3xl drop-shadow-md">{SEVERITY_BADGE[item.cat.severity] || "⚪"}</span>
-                                  <div>
-                                    <p className="font-bold text-lg text-[#222222] drop-shadow-sm">[{item.cat.id}] {item.cat.name}</p>
-                                    <div className="flex gap-3 mt-2 divide-x divide-[#e5e7eb]">
-                                      <span className="text-sm font-semibold text-[#222222]">Взломов: {(item.asr * 100).toFixed(0)}%</span>
-                                      <span className="text-sm font-semibold text-emerald-400 pl-3">Защита: {((1 - item.asr) * 100).toFixed(0)}%</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <ArrowRight className="w-6 h-6 text-[#8e8e93] group-hover:text-[#222222] transition-colors" />
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    <OwaspCategoryPanel sortedCats={sortedCats} />
                   </div>
               </div>
             </TabsContent>

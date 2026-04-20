@@ -350,15 +350,27 @@ export function ExportActions({ data }: { data: any }) {
 
   return (
     <div className="flex items-center gap-3 no-print mt-4 md:mt-0">
-      <Button variant="outline" className="border-slate-700 bg-slate-900/50 hover:bg-slate-800" onClick={downloadMarkdown}>
+      <Button
+        variant="outline"
+        className="border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] text-[#222222] shadow-[rgba(0,0,0,0.08)_0px_2px_4px] hover:shadow-[rgba(0,0,0,0.12)_0px_4px_8px] transition-all duration-200 rounded-lg px-5 py-2.5 font-medium"
+        onClick={downloadMarkdown}
+      >
         <FileText className="w-4 h-4 mr-2" />
         Отчёт MD
       </Button>
-      <Button variant="outline" className="border-slate-700 bg-slate-900/50 hover:bg-slate-800" onClick={downloadLogs}>
+      <Button
+        variant="outline"
+        className="border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] text-[#222222] shadow-[rgba(0,0,0,0.08)_0px_2px_4px] hover:shadow-[rgba(0,0,0,0.12)_0px_4px_8px] transition-all duration-200 rounded-lg px-5 py-2.5 font-medium"
+        onClick={downloadLogs}
+      >
         <Download className="w-4 h-4 mr-2" />
         Логи JSON
       </Button>
-      <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700" onClick={openPdfReport}>
+      <Button
+        variant="default"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-200 rounded-lg px-5 py-2.5 font-semibold"
+        onClick={openPdfReport}
+      >
         <Printer className="w-4 h-4 mr-2" />
         Печать PDF
       </Button>

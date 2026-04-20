@@ -24,11 +24,20 @@ export default function RunnerPage() {
     // Настройки для Eval
     const [limit, setLimit] = useState<string>("");
     const [evalJudge, setEvalJudge] = useState("gpt4o-mini-or");
+    const [workers, setWorkers] = useState<string>("4");
     const [metrics, setMetrics] = useState({
         AR: true,
         FA: true,
         CP: true,
         CR: true
+    });
+
+    // Thresholds для метрик (пороги успеха)
+    const [thresholds, setThresholds] = useState({
+        AR: "0.80",
+        FA: "0.90",
+        CP: "0.70",
+        CR: "0.75"
     });
 
     // Настройки для RedTeam
@@ -97,7 +106,16 @@ export default function RunnerPage() {
                 payload.dataset_path = datasetPath;
                 payload.judge = evalJudge;
                 payload.limit = limit ? parseInt(limit) : undefined;
+                payload.workers = workers ? parseInt(workers) : 4;
                 payload.api_contract.metrics = Object.keys(metrics).filter(k => metrics[k as keyof typeof metrics]);
+
+                // Add thresholds for enabled metrics
+                payload.thresholds = {};
+                Object.keys(metrics).forEach(k => {
+                    if (metrics[k as keyof typeof metrics]) {
+                        payload.thresholds[k] = parseFloat(thresholds[k as keyof typeof thresholds]);
+                    }
+                });
             } else {
                 // Red Teaming
                 endpoint = "/api/runner/redteam";
@@ -240,9 +258,201 @@ export default function RunnerPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Settings Card - Only for Eval Mode */}
+                    {activeTab === "eval" && (
+                        <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                                <BarChart3 className="w-24 h-24 text-[#1456f0]" />
+                            </div>
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-lg font-bold tracking-tight text-[#222222] z-10 flex justify-between items-center">
+                                    <span className="flex items-center gap-2">
+                                        Настройки Evaluation
+                                    </span>
+                                    <Badge variant="outline" className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] px-2 py-0.5 text-xs">RAG Quality</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 z-10 relative">
+                                <div>
+                                    <label className={labelClasses}>ID Модели-судьи (Judge Target)</label>
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={evalJudge}
+                                        onChange={e => setEvalJudge(e.target.value)}
+                                        placeholder="gpt4o-mini-or"
+                                    />
+                                    <p className="text-xs text-[#8e8e93] mt-1">Определено в eval/config/targets.yaml</p>
+                                </div>
+
+                                <div>
+                                    <label className={labelClasses}>Ограничение (Limit)</label>
+                                    <input
+                                        type="number"
+                                        className={inputClasses}
+                                        value={limit}
+                                        onChange={e => setLimit(e.target.value)}
+                                        placeholder="Например, 5 (оставить пустым для всего)"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className={labelClasses}>Параллельные воркеры (Workers)</label>
+                                    <input
+                                        type="number"
+                                        className={inputClasses}
+                                        value={workers}
+                                        onChange={e => setWorkers(e.target.value)}
+                                        placeholder="4"
+                                        min="1"
+                                        max="16"
+                                    />
+                                    <p className="text-xs text-[#8e8e93] mt-1">Количество одновременных запросов к API (1-16)</p>
+                                </div>
+
+                                <div>
+                                    <label className={labelClasses}>Что вычислять (Метрики и пороги)</label>
+                                    <div className="space-y-3">
+                                        {/* Категория: Генерация */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] px-2 py-0.5 text-[10px] font-semibold">Генерация</Badge>
+                                            </div>
+                                            <div className="space-y-2 pl-2">
+                                                {(["AR", "FA"] as const).map(m => (
+                                                    <div key={m} className="space-y-1.5">
+                                                        <label className="flex items-center gap-2 text-sm text-[#222222] select-none cursor-pointer p-2 rounded-md border border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] hover:border-[#d1d5db] transition-all">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-3.5 h-3.5 rounded border-[#e5e7eb] text-blue-500 focus:ring-blue-500/50"
+                                                                checked={metrics[m]}
+                                                                onChange={e => setMetrics({ ...metrics, [m]: e.target.checked })}
+                                                            />
+                                                            <span className="font-medium text-xs flex-1">{m === "AR" ? "Answer Relevancy" : "Faithfulness"}</span>
+                                                        </label>
+                                                        {metrics[m] && (
+                                                            <div className="pl-6 flex items-center gap-2">
+                                                                <span className="text-[10px] text-[#8e8e93] uppercase tracking-wide">Порог:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    max="1"
+                                                                    className="flex h-7 w-20 rounded-md border border-[#e5e7eb] bg-white px-2 py-1 text-xs text-[#222222] focus:outline-none focus:ring-1 focus:ring-[#1456f0]/30 focus:border-[#1456f0]"
+                                                                    value={thresholds[m]}
+                                                                    onChange={e => setThresholds({ ...thresholds, [m]: e.target.value })}
+                                                                />
+                                                                <span className="text-[10px] text-[#8e8e93]">{m === "AR" ? "(>0.80 хорошо)" : "(>0.90 хорошо)"}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Категория: Точность Retrieval */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className="bg-[#ecfdf5] text-[#059669] border-[#a7f3d0] px-2 py-0.5 text-[10px] font-semibold">Точность Retrieval</Badge>
+                                            </div>
+                                            <div className="space-y-2 pl-2">
+                                                {(["CP", "CR"] as const).map(m => (
+                                                    <div key={m} className="space-y-1.5">
+                                                        <label className="flex items-center gap-2 text-sm text-[#222222] select-none cursor-pointer p-2 rounded-md border border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] hover:border-[#d1d5db] transition-all">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-3.5 h-3.5 rounded border-[#e5e7eb] text-emerald-500 focus:ring-emerald-500/50"
+                                                                checked={metrics[m]}
+                                                                onChange={e => setMetrics({ ...metrics, [m]: e.target.checked })}
+                                                            />
+                                                            <span className="font-medium text-xs flex-1">{m === "CP" ? "Context Precision" : "Context Recall"}</span>
+                                                        </label>
+                                                        {metrics[m] && (
+                                                            <div className="pl-6 flex items-center gap-2">
+                                                                <span className="text-[10px] text-[#8e8e93] uppercase tracking-wide">Порог:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    max="1"
+                                                                    className="flex h-7 w-20 rounded-md border border-[#e5e7eb] bg-white px-2 py-1 text-xs text-[#222222] focus:outline-none focus:ring-1 focus:ring-[#1456f0]/30 focus:border-[#1456f0]"
+                                                                    value={thresholds[m]}
+                                                                    onChange={e => setThresholds({ ...thresholds, [m]: e.target.value })}
+                                                                />
+                                                                <span className="text-[10px] text-[#8e8e93]">{m === "CP" ? "(>0.70 хорошо)" : "(>0.75 хорошо)"}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Red Teaming Settings Card */}
+                    {activeTab === "redteam" && (
+                        <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                                <Shield className="w-24 h-24 text-[#dc2626]" />
+                            </div>
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-lg font-bold tracking-tight text-[#222222] z-10 flex justify-between items-center">
+                                    <span className="flex items-center gap-2">
+                                        Настройки Red Teaming
+                                    </span>
+                                    <Badge variant="outline" className="bg-[#fef2f2] text-[#dc2626] border-[#fecaca] px-2 py-0.5 text-xs">Security</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 z-10 relative">
+                                <div>
+                                    <label className={labelClasses}>ID Модели-судьи (Judge Preset)</label>
+                                    <input
+                                        type="text"
+                                        className={inputClasses}
+                                        value={redteamJudge}
+                                        onChange={e => setRedteamJudge(e.target.value)}
+                                        placeholder="gpt-4o-mini"
+                                    />
+                                    <p className="text-xs text-[#8e8e93] mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
+                                </div>
+
+                                <div>
+                                    <label className={labelClasses}>Атак на тип уязвимости (Attacks per Vuln)</label>
+                                    <input
+                                        type="number"
+                                        className={inputClasses}
+                                        value={attacksPerVuln}
+                                        onChange={e => setAttacksPerVuln(e.target.value)}
+                                        placeholder="1"
+                                        min="1"
+                                    />
+                                    <p className="text-xs text-[#8e8e93] mt-1">Количество симуляций атак на каждую уязвимость</p>
+                                </div>
+
+                                <div>
+                                    <label className={labelClasses}>Порог успеха атаки (ASR Threshold)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className={inputClasses}
+                                        value={threshold}
+                                        onChange={e => setThreshold(e.target.value)}
+                                        placeholder="0.20"
+                                        min="0"
+                                        max="1"
+                                    />
+                                    <p className="text-xs text-[#8e8e93] mt-1">Attack Success Rate выше порога = FAIL</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
-                {/* Right Column - Tabs with specific settings */}
+                {/* Right Column - Mode Selection & Dataset */}
                 <div className="lg:col-span-4 space-y-5">
                     <Card className="bg-white border border-[#e5e7eb] shadow-[rgba(0,0,0,0.08)_0px_4px_6px] rounded-xl overflow-hidden relative">
                         <CardHeader className="pb-4">
@@ -263,7 +473,7 @@ export default function RunnerPage() {
                                     </TabsTrigger>
                                 </TabsList>
 
-                                {/* Evaluate RAG Settings */}
+                                {/* Evaluate RAG - Dataset Selection */}
                                 <TabsContent value="eval" className="space-y-4 mt-4">
                                     <div className="space-y-3">
                                         <div>
@@ -294,88 +504,18 @@ export default function RunnerPage() {
                                             </Select>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <label className={labelClasses}>ID Модели-судьи (Judge Target)</label>
-                                        <input
-                                            type="text"
-                                            className={inputClasses}
-                                            value={evalJudge}
-                                            onChange={e => setEvalJudge(e.target.value)}
-                                            placeholder="gpt4o-mini-or"
-                                        />
-                                        <p className="text-xs text-[#8e8e93] mt-1">Определено в eval/config/targets.yaml</p>
-                                    </div>
-
-                                    <div>
-                                        <label className={labelClasses}>Ограничение (Limit)</label>
-                                        <input
-                                            type="number"
-                                            className={inputClasses}
-                                            value={limit}
-                                            onChange={e => setLimit(e.target.value)}
-                                            placeholder="Например, 5 (оставить пустым для всего)"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className={labelClasses}>Что вычислять (Метрики)</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {(["AR", "FA", "CP", "CR"] as const).map(m => (
-                                                <label key={m} className="flex items-center gap-2 text-sm text-[#222222] select-none cursor-pointer p-2 rounded-md border border-[#e5e7eb] bg-white hover:bg-[#f2f3f5] hover:border-[#d1d5db] transition-all">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="w-3.5 h-3.5 rounded border-[#e5e7eb] text-purple-500 focus:ring-purple-500/50"
-                                                        checked={metrics[m]}
-                                                        onChange={e => setMetrics({ ...metrics, [m]: e.target.checked })}
-                                                    />
-                                                    <span className="font-medium text-xs">{m === "AR" ? "Answer Rel" : m === "FA" ? "Faithfulness" : m === "CP" ? "Ctx Precision" : "Ctx Recall"}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
                                 </TabsContent>
 
-                                {/* Red Teaming Settings */}
+                                {/* Red Teaming - No dataset needed */}
                                 <TabsContent value="redteam" className="space-y-4 mt-4">
-                                    <div>
-                                        <label className={labelClasses}>ID Модели-судьи (Judge Preset)</label>
-                                        <input
-                                            type="text"
-                                            className={inputClasses}
-                                            value={redteamJudge}
-                                            onChange={e => setRedteamJudge(e.target.value)}
-                                            placeholder="gpt-4o-mini"
-                                        />
-                                        <p className="text-xs text-[#8e8e93] mt-1">Пресеты: gpt-4o-mini, gemini-flash, haiku, llama3-70b</p>
-                                    </div>
-
-                                    <div>
-                                        <label className={labelClasses}>Атак на тип уязвимости (Attacks per Vuln)</label>
-                                        <input
-                                            type="number"
-                                            className={inputClasses}
-                                            value={attacksPerVuln}
-                                            onChange={e => setAttacksPerVuln(e.target.value)}
-                                            placeholder="1"
-                                            min="1"
-                                        />
-                                        <p className="text-xs text-[#8e8e93] mt-1">Количество симуляций атак на каждую уязвимость</p>
-                                    </div>
-
-                                    <div>
-                                        <label className={labelClasses}>Порог успеха атаки (ASR Threshold)</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            className={inputClasses}
-                                            value={threshold}
-                                            onChange={e => setThreshold(e.target.value)}
-                                            placeholder="0.20"
-                                            min="0"
-                                            max="1"
-                                        />
-                                        <p className="text-xs text-[#8e8e93] mt-1">Attack Success Rate выше порога = FAIL</p>
+                                    <div className="p-4 rounded-lg bg-[#fef2f2] border border-[#fecaca]">
+                                        <div className="flex items-start gap-2">
+                                            <Shield className="w-4 h-4 text-[#dc2626] mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-medium text-[#dc2626]">Red Teaming режим</p>
+                                                <p className="text-xs text-[#8e8e93] mt-1">Атаки генерируются автоматически. Настройки доступны слева.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </TabsContent>
                             </Tabs>
@@ -384,12 +524,12 @@ export default function RunnerPage() {
                                 <button
                                     onClick={handleRun}
                                     disabled={status === 'loading'}
-                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
+                                    className="w-full flex items-center justify-center gap-2 bg-[#1456f0] hover:bg-[#0d47d1] text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-[#1456f0]/20 hover:shadow-xl hover:shadow-[#1456f0]/30 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed tracking-wide text-sm"
                                 >
                                     {status === 'loading' ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
-                                        <Play className="w-4 h-4" />
+                                        <Play className="w-5 h-5" />
                                     )}
                                     {activeTab === "eval" ? "Запустить Evaluation" : "Запустить Red Team"}
                                 </button>

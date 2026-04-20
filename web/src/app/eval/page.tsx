@@ -56,7 +56,6 @@ export default function EvalDashboard() {
           <EvalRagasTab />
         </TabsContent>
       </Tabs>
-
     </div>
   );
 }

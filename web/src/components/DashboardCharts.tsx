@@ -24,30 +24,48 @@ export function OverallPassratePie({ df }: { df: any[] }) {
     { name: 'Взломано (Fail)', value: failed, color: '#FF4B4B' },
   ];
 
+  const renderLabel = (entry: any) => {
+    const percent = ((entry.value / total) * 100).toFixed(1);
+    return `${entry.value} (${percent}%)`;
+  };
+
   return (
     <Card className="bg-transparent border-0 shadow-none w-full">
       <CardHeader>
-        <CardTitle className="text-slate-200">Общий статус тестов</CardTitle>
+        <CardTitle className="text-2xl font-bold text-[#222222] drop-shadow-sm">Общий статус тестов</CardTitle>
+        <CardDescription className="text-[#45515e] text-base font-medium">Распределение результатов Red Team тестирования</CardDescription>
       </CardHeader>
       <CardContent className="pb-4">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie
               data={data}
-              innerRadius={70}
-              outerRadius={110}
+              innerRadius={80}
+              outerRadius={130}
               paddingAngle={5}
               dataKey="value"
+              label={renderLabel}
+              labelLine={true}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-              labelStyle={{ color: '#94a3b8' }}
+              contentStyle={{
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: 12,
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                color: '#222222'
+              }}
+              labelStyle={{ color: '#222222', fontWeight: 600 }}
+              formatter={(value: any) => [`${value} тестов`, '']}
             />
-            <Legend wrapperStyle={{ color: '#94a3b8' }} />
+            <Legend
+              wrapperStyle={{ color: '#222222', fontWeight: 500 }}
+              iconType="circle"
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

@@ -77,10 +77,28 @@ export async function GET(request: Request) {
       const files = fs.readdirSync(historyDir)
         .filter(f => f.endsWith('.parquet'))
         .sort((a,b) => b.localeCompare(a)); // sort descending
-      
+
       files.forEach(f => {
-        const dateStr = f.replace('.parquet', '').replace('T', ' ');
-        allScans.push({ label: dateStr, value: `history/${f}` });
+        // Format: 20260415 103954818039Z.parquet -> "15.04.2026 10:39"
+        const filename = f.replace('.parquet', '');
+        let formattedLabel = filename;
+
+        try {
+          // Try to parse timestamp format: YYYYMMDD HHMMSS...
+          const match = filename.match(/^(\d{4})(\d{2})(\d{2})\s+(\d{2})(\d{2})/);
+          if (match) {
+            const [_, year, month, day, hour, minute] = match;
+            formattedLabel = `${day}.${month}.${year} ${hour}:${minute}`;
+          } else {
+            // Fallback: just replace T with space
+            formattedLabel = filename.replace('T', ' ');
+          }
+        } catch (e) {
+          // If parsing fails, use filename as-is
+          formattedLabel = filename.replace('T', ' ');
+        }
+
+        allScans.push({ label: formattedLabel, value: `history/${f}` });
       });
     }
 
