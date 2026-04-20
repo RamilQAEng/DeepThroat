@@ -35,11 +35,18 @@ Proactively test your LLM against security vulnerabilities following **OWASP LLM
 - Comprehensive security reports
 
 ### RAG Evaluation
-Assess RAG system quality with **4 core metrics** powered by LLM judges:
+Assess RAG system quality via **two independent frameworks** — DeepEval and RAGAS — from a single interface on the `/eval` page.
+
+**DeepEval (4 core metrics):**
 - **Answer Relevancy** (≥0.7) — Does the answer match the question?
 - **Faithfulness** (≥0.8) — Is the answer grounded in context? (No hallucinations)
 - **Contextual Precision** (≥0.7) — Are relevant chunks ranked first?
 - **Contextual Recall** (≥0.6) — Were all relevant chunks retrieved?
+
+**RAGAS (RAGAS 0.4.x framework):**
+- Same 4 standard metrics plus custom metrics support
+- Custom metrics via `eval/custom_metrics/` — drop a Python file, auto-discovered at runtime
+- Built-in example: `completeness` metric (answer completeness via LLM judge)
 - Dataset-based evaluation
 - Live API testing
 - A/B testing support
@@ -151,7 +158,7 @@ python scripts/run_redteam.py --target qwen-72b --judge qwen-72b-or
 
 ---
 
-### RAG Evaluation
+### RAG Evaluation — DeepEval
 
 **Offline evaluation (dataset-based):**
 
@@ -201,13 +208,75 @@ Located in `eval/results/<timestamp>_<dataset_name>/`:
 | `api_responses.json` | Raw API responses (question → answer + chunks) |
 | `errors_log.json` | API errors and timeouts |
 
-**Supported LLM Judges:**
+---
+
+### RAG Evaluation — RAGAS
+
+**Run RAGAS pipeline:**
+
+```bash
+cd eval
+source ../.venv/bin/activate
+
+# Quick test (3 questions)
+python eval_ragas_metrics.py --limit 3
+
+# Full dataset with specific judge
+python eval_ragas_metrics.py --judge gpt4o-mini-or
+
+# Custom judge from config
+# Edit eval/config/eval_config.yaml → default_judge
+```
+
+**Results:** saved to `eval/results/<timestamp>_ragas/metrics.json`
+
+**Custom Metrics:**
+
+Drop a `.py` file into `eval/custom_metrics/` — auto-discovered at runtime:
+
+```python
+# eval/custom_metrics/my_metric.py
+from dataclasses import dataclass, field
+from pydantic import BaseModel
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics.base import MetricWithLLM, SingleTurnMetric
+from ragas.prompt import PydanticPrompt
+
+class MyInput(BaseModel):
+    question: str
+    answer: str
+
+class MyOutput(BaseModel):
+    score: float
+    reason: str
+
+class MyPrompt(PydanticPrompt[MyInput, MyOutput]):
+    instruction = "Score the answer 0.0–1.0. Return JSON with score and reason."
+    input_model = MyInput
+    output_model = MyOutput
+
+@dataclass
+class MyCustomMetric(MetricWithLLM, SingleTurnMetric):
+    name: str = "my_metric"
+    prompt: MyPrompt = field(default_factory=MyPrompt)
+
+    async def _single_turn_ascore(self, sample: SingleTurnSample, callbacks=None) -> float:
+        out = await self.prompt.generate(
+            data=MyInput(question=sample.user_input or "", answer=sample.response or ""),
+            llm=self.llm,
+        )
+        return max(0.0, min(1.0, float(out.score)))
+```
+
+See `eval/readme_ragas.md` for full architecture and nuances.
+
+**Supported LLM Judges (both frameworks):**
 
 | Judge | Model | Recommendation |
 |-------|-------|----------------|
-| `qwen-72b-or` | qwen/qwen-2.5-72b-instruct | **Default** — Fast & quality |
+| `gpt4o-mini-or` | openai/gpt-4o-mini | **Default (RAGAS)** — Reliable JSON output |
+| `qwen-72b-or` | qwen/qwen-2.5-72b-instruct | **Default (DeepEval)** — Fast & quality |
 | `qwen-235b-or` | qwen/qwen3-235b-a22b | Maximum accuracy |
-| `gpt4o-mini-or` | openai/gpt-4o-mini | Fast alternative |
 | `gpt4o-or` | openai/gpt-4o | High precision |
 | `gemini-flash` | google/gemini-flash-1.5 | Most cost-effective |
 
@@ -273,15 +342,22 @@ DeepThroath/
 │   └── reports/                  # PDF/Markdown report generation
 │
 ├── eval/                         # RAG Evaluation Module (Python)
-│   ├── eval_rag_metrics.py       # Core evaluation pipeline
+│   ├── eval_rag_metrics.py       # DeepEval pipeline
+│   ├── eval_ragas_metrics.py     # RAGAS 0.4.x pipeline
+│   ├── custom_metrics/           # Auto-discovered RAGAS custom metrics
+│   │   ├── example_metric.py     # Completeness metric (template)
+│   │   └── resort_tone.py        # Resort tone custom metric
+│   ├── readme_ragas.md           # RAGAS architecture & nuances
 │   ├── scripts/
-│   │   ├── run_eval.py           # CLI runner
+│   │   ├── run_eval.py           # DeepEval CLI runner
 │   │   └── convert_dataset.py   # Dataset converter
 │   ├── datasets/                 # Question datasets
 │   ├── config/
-│   │   ├── eval_config.yaml      # Judge settings
+│   │   ├── eval_config.yaml      # Judge settings (default_judge)
 │   │   └── targets.yaml          # LLM judge configurations
 │   └── results/                  # Evaluation results (auto-generated)
+│       ├── <ts>_<name>/          # DeepEval results
+│       └── <ts>_ragas/           # RAGAS results
 │
 ├── tests/
 │   └── eval/                     # Pytest tests for RAG metrics
@@ -412,6 +488,7 @@ services:
 ## Roadmap
 
 - [ ] **Advanced Red Team Attacks** — Indirect prompt injection, multi-turn attacks
+- [x] **RAGAS Integration** — Second eval framework with auto-discovered custom metrics
 - [ ] **More RAG Metrics** — Answer similarity, semantic consistency
 - [ ] **Historical Analytics** — Trend analysis, comparative dashboards
 - [ ] **API Management** — Built-in rate limiting, caching, load balancing
@@ -492,6 +569,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 Built with:
 - [Next.js](https://nextjs.org/) — React framework
 - [DeepEval](https://github.com/confident-ai/deepeval) — LLM evaluation framework
+- [RAGAS](https://github.com/explodinggradients/ragas) — RAG evaluation framework
 - [Tailwind CSS](https://tailwindcss.com/) — Utility-first CSS
 - [OpenRouter](https://openrouter.ai/) — Unified LLM API
 - [Anthropic](https://www.anthropic.com/) — Claude API
