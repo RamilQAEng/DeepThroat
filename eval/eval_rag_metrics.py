@@ -85,17 +85,37 @@ class OpenRouterJudge(DeepEvalBaseLLM):
     def load_model(self):
         return self.client
 
+    def _clean_json(self, text: str) -> str:
+        import re
+        match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
+        if match:
+            return match.group(0)
+        return text.strip()
+
     def generate(self, prompt: str) -> str:
         extra = {"reasoning": {"exclude": True}} if self.no_reasoning else {}
+        system_prompt = (
+            "You are an evaluation assistant. "
+            "CRITICAL: The 'reason' field in your JSON MUST be written strictly in Russian (НА РУССКОМ ЯЗЫКЕ). "
+            "Keep all other JSON fields and structure exactly as required. "
+            "IMPORTANT: You MUST return ONLY valid JSON. "
+            "Do not include any intro text, markdown formatting (like ```json), or conversational fillers. "
+            "Your response must start with { and end with }."
+        )
+        
+        # Усиливаем user prompt в самом конце
+        prompt_suffix = "\n\n[CRITICAL FINAL INSTRUCTION]\nThe value of the 'reason' field MUST be written in fluent Russian language (по-русски)."
+        prompt += prompt_suffix
+        
         response = self.client.chat.completions.create(
             model=self.model,
             extra_body=extra,
             messages=[
-                {"role": "system", "content": "You are an evaluation assistant. Always write the 'reason' field in Russian language. Keep all other JSON fields and structure exactly as required."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
         )
-        return response.choices[0].message.content
+        return self._clean_json(response.choices[0].message.content)
 
     async def a_generate(self, prompt: str) -> str:
         return await asyncio.get_event_loop().run_in_executor(
@@ -116,19 +136,39 @@ class GigaChatJudge(DeepEvalBaseLLM):
         from gigachat import GigaChat
         return GigaChat
 
+    def _clean_json(self, text: str) -> str:
+        import re
+        match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
+        if match:
+            return match.group(0)
+        return text.strip()
+
     def generate(self, prompt: str) -> str:
         from gigachat import GigaChat
         from gigachat.models import Chat, Messages, MessagesRole
+        
+        system_prompt = (
+            "You are an evaluation assistant. "
+            "CRITICAL: The 'reason' field in your JSON MUST be written strictly in Russian (НА РУССКОМ ЯЗЫКЕ). "
+            "Keep all other JSON fields and structure exactly as required. "
+            "IMPORTANT: You MUST return ONLY valid JSON. "
+            "Do not include any intro text, markdown formatting (like ```json), or conversational fillers. "
+            "Your response must start with { and end with }."
+        )
+        
+        prompt_suffix = "\n\n[CRITICAL FINAL INSTRUCTION]\nThe value of the 'reason' field MUST be written in fluent Russian language (по-русски)."
+        prompt += prompt_suffix
+        
         with GigaChat(credentials=os.environ["GIGACHAT_CREDENTIALS"],
                       verify_ssl_certs=False) as client:
             response = client.chat(Chat(
                 model=self.model,
                 messages=[
-                    Messages(role=MessagesRole.SYSTEM, content="You are an evaluation assistant. Always write the 'reason' field in Russian language. Keep all other JSON fields and structure exactly as required."),
+                    Messages(role=MessagesRole.SYSTEM, content=system_prompt),
                     Messages(role=MessagesRole.USER, content=prompt),
                 ],
             ))
-        return response.choices[0].message.content
+        return self._clean_json(response.choices[0].message.content)
 
     async def a_generate(self, prompt: str) -> str:
         return await asyncio.get_event_loop().run_in_executor(
