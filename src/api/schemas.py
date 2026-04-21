@@ -47,6 +47,7 @@ class EvalRequest(BaseModel):
         description="DeepEval метрики для оценки"
     )
     n_samples: int = Field(50, ge=1, le=500, description="Количество примеров")
+    api_contract: dict | None = Field(None, description="API контракт для online режима")
 
 
 class JobResponse(BaseModel):

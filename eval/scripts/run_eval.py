@@ -50,7 +50,8 @@ def run_eval_scan(
     dataset: str,
     model: str,
     metrics: list[str] | None = None,
-    n_samples: int = 50
+    n_samples: int = 50,
+    api_contract: dict | None = None
 ) -> Path:
     """
     Запуск RAG Evaluation (callable from FastAPI).
@@ -60,6 +61,7 @@ def run_eval_scan(
         model: Модель судьи (gpt4o-mini-or, gemini-flash, etc.)
         metrics: Метрики DeepEval (пока не используется, берем все)
         n_samples: Количество примеров для оценки
+        api_contract: API контракт для online режима (URL, headers, body template, extractors)
 
     Returns:
         Path к директории с результатами (eval/results/{timestamp}_{dataset})
@@ -69,8 +71,20 @@ def run_eval_scan(
     default_targets = eval_dir / "config" / "targets.yaml"
 
     # Найти файл датасета
-    datasets_dir = eval_dir / "datasets"
-    dataset_path = datasets_dir / f"{dataset}.json"
+    dataset_str = str(dataset)
+    if not dataset_str.endswith(".json"):
+        dataset_str += ".json"
+        
+    dataset_path = Path(dataset_str)
+    if not dataset_path.is_absolute():
+        project_root = eval_dir.parent
+        # Сначала проверим относительный путь от корня проекта
+        if (project_root / dataset_path).exists():
+            dataset_path = project_root / dataset_path
+        else:
+            # Иначе предполагаем, что передали только имя файла
+            dataset_path = eval_dir / "datasets" / dataset_path.name
+
     if not dataset_path.exists():
         raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -109,8 +123,8 @@ def run_eval_scan(
         judge_config=judge_config,
         max_workers=max_workers,
         threshold=threshold,
-        api_url=None,  # offline mode
-        api_config_dict=None,
+        api_url=None,  # offline mode unless api_contract provided
+        api_config_dict=api_contract,  # pass API contract from FastAPI
         limit=n_samples,
     )
 

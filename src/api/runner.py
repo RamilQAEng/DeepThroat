@@ -67,7 +67,8 @@ async def run_eval_background(
             dataset=config.dataset,
             model=config.model,
             metrics=config.metrics,
-            n_samples=config.n_samples
+            n_samples=config.n_samples,
+            api_contract=config.api_contract
         )
 
         jobs_dict[job_id].status = "completed"

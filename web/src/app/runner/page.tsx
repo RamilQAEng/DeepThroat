@@ -12,6 +12,7 @@ export default function RunnerPage() {
     const [activeTab, setActiveTab] = useState<string>("eval");
     const [datasets, setDatasets] = useState<{ name: string, path: string }[]>([]);
     const [datasetPath, setDatasetPath] = useState<string>("");
+    const [judges, setJudges] = useState<{ name: string; model: string; provider: string }[]>([]);
 
     // Общие поля API контракта
     const [url, setUrl] = useState("https://assist.dev.mglk.ru/api/v1/eval/rag");
@@ -57,8 +58,21 @@ export default function RunnerPage() {
         });
     };
 
+    const loadJudges = () => {
+        fetch("/api/eval/judges").then(res => res.json()).then(data => {
+            if (data.judges && data.judges.length > 0) {
+                setJudges(data.judges);
+                // Set default to first judge if current value doesn't exist
+                if (!data.judges.find((j: { name: string }) => j.name === evalJudge)) {
+                    setEvalJudge(data.judges[0].name);
+                }
+            }
+        });
+    };
+
     useEffect(() => {
         loadDatasets();
+        loadJudges();
     }, []);
 
     const handleUploadSuccess = (filePath: string) => {
@@ -276,13 +290,18 @@ export default function RunnerPage() {
                             <CardContent className="space-y-4 z-10 relative">
                                 <div>
                                     <label className={labelClasses}>ID Модели-судьи (Judge Target)</label>
-                                    <input
-                                        type="text"
-                                        className={inputClasses}
-                                        value={evalJudge}
-                                        onChange={e => setEvalJudge(e.target.value)}
-                                        placeholder="gpt4o-mini-or"
-                                    />
+                                    <Select value={evalJudge} onValueChange={(v) => v && setEvalJudge(v)}>
+                                        <SelectTrigger className="bg-white border border-[#e5e7eb] text-[#222222] h-9 w-full focus:ring-[#1456f0]/30 rounded-md">
+                                            <SelectValue placeholder="Выберите модель-судью..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border-[#e5e7eb] text-[#222222]">
+                                            {judges.map(judge => (
+                                                <SelectItem key={judge.name} value={judge.name}>
+                                                    {judge.name} ({judge.provider}: {judge.model})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <p className="text-xs text-[#8e8e93] mt-1">Определено в eval/config/targets.yaml</p>
                                 </div>
 

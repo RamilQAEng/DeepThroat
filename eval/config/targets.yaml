@@ -41,3 +41,9 @@ targets:
     model: GigaChat-Pro
     description: "Российская модель-судья"
     threshold: 0.7
+
+  - name: DeepSeek V3.2
+    provider: openrouter
+    model: deepseek/deepseek-v3.2
+    description: "DeepSeek V3.2 — высокое качество"
+    threshold: 0.7

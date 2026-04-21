@@ -5,31 +5,40 @@ const FASTAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log('[/api/runner] Received body:', JSON.stringify(body, null, 2));
 
     // Валидация
-    if (!body.dataset || !body.model) {
+    if (!body.dataset_path || !body.judge) {
+      console.error('[/api/runner] Validation failed:', { dataset_path: body.dataset_path, judge: body.judge });
       return NextResponse.json(
-        { error: 'Missing required fields: dataset, model' },
+        { error: 'Missing required fields: dataset_path, judge' },
         { status: 400 }
       );
     }
 
     // Запрос к FastAPI микросервису
+    const fastapiPayload = {
+      dataset: body.dataset_path,
+      model: body.judge,
+      metrics: body.api_contract?.metrics || ['answer_relevancy', 'faithfulness', 'contextual_precision'],
+      n_samples: body.limit || 50,
+      api_contract: body.api_contract || null,
+    };
+    console.log('[/api/runner] Sending to FastAPI:', JSON.stringify(fastapiPayload, null, 2));
+
     const response = await fetch(`${FASTAPI_URL}/api/runner/eval`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        dataset: body.dataset,
-        model: body.model,
-        metrics: body.metrics || ['answer_relevancy', 'faithfulness', 'contextual_precision'],
-        n_samples: body.n_samples || 50,
-      }),
+      body: JSON.stringify(fastapiPayload),
     });
+
+    console.log('[/api/runner] FastAPI response status:', response.status);
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('[/api/runner] FastAPI error:', error);
       return NextResponse.json(
         { error: error.detail || 'Failed to create job' },
         { status: response.status }
