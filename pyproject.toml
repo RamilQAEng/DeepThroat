@@ -5,10 +5,10 @@ description = "Universal RAG Evaluation and Red Teaming Framework"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "deepteam==1.0.6",
-    "deepeval==3.9.3",
-    "anthropic==0.86.0",
-    "openai==2.30.0",
+    "deepteam>=1.0.6",
+    "deepeval==3.9.7",
+    "anthropic>=0.40.0",
+    "openai>=1.50.0,<2.0.0",
     "pandas==2.3.3",
     "pyarrow==23.0.1",
     "pydantic==2.12.5",

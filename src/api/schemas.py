@@ -41,6 +41,8 @@ class EvalRequest(BaseModel):
     )
     n_samples: int = Field(50, ge=1, le=500, description="Количество примеров")
     api_contract: dict | None = Field(None, description="API контракт для online режима")
+    workers: int | None = Field(1, ge=1, le=16, description="Количество параллельных воркеров")
+    thresholds: dict | None = Field(None, description="Пороги для метрик")
 
 
 class JobResponse(BaseModel):

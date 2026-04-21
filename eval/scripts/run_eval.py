@@ -16,6 +16,7 @@ Offline (батч из файла, только AR если нет retrieval_con
 import argparse
 import sys
 from pathlib import Path
+from typing import Callable
 
 # Ensure project root is on the path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -50,7 +51,9 @@ def run_eval_scan(
     metrics: list[str] | None = None,
     n_samples: int = 50,
     api_contract: dict | None = None,
-    progress_callback: callable | None = None,
+    progress_callback: Callable | None = None,
+    workers: int | None = None,
+    thresholds: dict | None = None,
 ) -> Path:
     """
     Запуск RAG Evaluation (callable from FastAPI).
@@ -97,22 +100,6 @@ def run_eval_scan(
         raise ValueError(f"Judge model not found: {e}") from e
 
     threshold = target.get("threshold", 0.7)
-    provider = target["provider"]
-    model_name = target["model"]
-
-    print(f"[+] Dataset   : {dataset_path}")
-    print(f"[+] Judge     : {target['name']} ({provider} / {model_name})")
-    print(f"[+] Threshold : {threshold}")
-    print(f"[+] Workers   : {max_workers}")
-    print(f"[+] Samples   : {n_samples}")
-
-    # Build judge config
-    judge_config = {
-        "provider": provider,
-        "model": model_name,
-        "name": target["name"],
-        "no_reasoning": target.get("no_reasoning", False),
-    }
 
     # Import and run eval pipeline
     sys.path.insert(0, str(eval_dir))
@@ -120,13 +107,13 @@ def run_eval_scan(
 
     results_dir = run_eval(
         input_path=str(dataset_path),
-        judge_config=judge_config,
-        max_workers=max_workers,
-        threshold=threshold,
-        api_url=None,  # offline mode unless api_contract provided
-        api_config_dict=api_contract,  # pass API contract from FastAPI
+        judge_config=target["name"],
+        api_contract=api_contract,
+        metrics=metrics,
         limit=n_samples,
         progress_callback=progress_callback,
+        workers=workers or max_workers,
+        thresholds=thresholds or {"AR": threshold, "FA": threshold, "CP": threshold, "CR": threshold},
     )
 
     return results_dir

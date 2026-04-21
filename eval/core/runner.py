@@ -12,7 +12,21 @@ from deepeval.test_case import LLMTestCase
 
 from .api_utils import fetch_from_api
 from .checkpoint import save_checkpoint
-from .judges import build_judge
+
+# Thread-local storage for metrics to avoid re-initialization logs
+_thread_local = threading.local()
+
+
+def _get_metrics(thresholds: Dict[str, float], judge: Any) -> Dict[str, Any]:
+    if not hasattr(_thread_local, "metrics"):
+        # Initialize metrics once per thread
+        _thread_local.metrics = {
+            "AR": AnswerRelevancyMetric(threshold=thresholds.get("AR", 0.7), model=judge, include_reason=True),
+            "FA": FaithfulnessMetric(threshold=thresholds.get("FA", 0.8), model=judge, include_reason=True),
+            "CP": ContextualPrecisionMetric(threshold=thresholds.get("CP", 0.7), model=judge, include_reason=True),
+            "CR": ContextualRecallMetric(threshold=thresholds.get("CR", 0.6), model=judge, include_reason=True),
+        }
+    return _thread_local.metrics
 
 
 def evaluate_record(
@@ -22,7 +36,7 @@ def evaluate_record(
     done: Dict[str, Any],
     lock: threading.Lock,
     run_dir: Path,
-    judge_config: Dict[str, Any],
+    judge: Any,  # Now accepts judge object directly
     thresholds: Dict[str, float],
     api_config: Optional[Dict[str, Any]] = None,
     api_url: Optional[str] = None,
@@ -30,7 +44,7 @@ def evaluate_record(
     errors_log: Optional[List[Dict[str, Any]]] = None,
     progress_callback: Optional[Callable] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Создаёт свои экземпляры метрик и вычисляет score + reason для записи."""
+    """Использует кешированные в потоке метрики для оценки записи."""
     try:
         return _evaluate_record_inner(
             rec,
@@ -39,7 +53,7 @@ def evaluate_record(
             done,
             lock,
             run_dir,
-            judge_config,
+            judge,
             thresholds,
             api_config,
             api_url,
@@ -48,19 +62,12 @@ def evaluate_record(
             progress_callback,
         )
     except Exception as e:
+        # ... (rest of error handling is the same)
         import traceback
 
         rec_id = rec.get("id") or rec.get("session_id") or f"index-{index}"
         error_details = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-
-        print(f"\n{'=' * 80}\n[CRITICAL ERROR] Record {rec_id} failed!\n{'=' * 80}\n{error_details}\n{'=' * 80}\n")
-
-        try:
-            with open(run_dir / f"error_{rec_id}.txt", "w", encoding="utf-8") as f:
-                f.write(f"Record ID: {rec_id}\nQuestion: {rec.get('user_query', '')}\n\n{error_details}")
-        except Exception:
-            pass
-
+        print(f"\n[CRITICAL ERROR] Record {rec_id} failed: {error_details}")
         if errors_log is not None:
             errors_log.append({"id": rec_id, "error": error_details, "stage": "evaluate_record"})
         return None
@@ -73,7 +80,7 @@ def _evaluate_record_inner(
     done: Dict[str, Any],
     lock: threading.Lock,
     run_dir: Path,
-    judge_config: Dict[str, Any],
+    judge: Any,
     thresholds: Dict[str, float],
     api_config: Optional[Dict[str, Any]],
     api_url: Optional[str],
@@ -81,13 +88,12 @@ def _evaluate_record_inner(
     errors_log: Optional[List[Dict[str, Any]]],
     progress_callback: Optional[Callable],
 ) -> Optional[Dict[str, Any]]:
-    # API Fetch if online mode
+    # ... (API Fetch same)
     if api_url or api_config:
         try:
             rec = fetch_from_api(rec, api_config, api_url, api_log, lock)
         except Exception as e:
             rec_id = rec.get("id") or rec.get("session_id") or f"index-{index}"
-            print(f"[{index}/{total}] API error [{rec_id}]: {e}")
             if errors_log is not None:
                 errors_log.append({"id": rec_id, "error": str(e), "stage": "api"})
             return None
@@ -97,7 +103,6 @@ def _evaluate_record_inner(
     user_query = rec.get("user_query") or rec.get("question")
 
     if not actual_answer or not user_query:
-        print(f"[SKIP] {rec_id}: Missing required fields")
         return None
 
     rec["actual_answer"] = actual_answer
@@ -105,10 +110,8 @@ def _evaluate_record_inner(
 
     session_key = str(rec_id)
     if session_key in done:
-        print(f"[{index}/{total}] {session_key} — чекпоинт, пропускаем")
         return done[session_key]
 
-    # Metric setup
     context = rec.get("retrieval_context")
     has_context = isinstance(context, list) and len(context) > 0
     expected = rec.get("expected_output") or rec.get("expected_answer") or ""
@@ -121,13 +124,10 @@ def _evaluate_record_inner(
         retrieval_context=context if has_context else None,
     )
 
-    judge = build_judge(
-        provider=judge_config["provider"],
-        model=judge_config["model"],
-        no_reasoning=judge_config.get("no_reasoning", False),
-    )
-
     enabled_metrics = api_config.get("metrics", ["AR", "FA", "CP", "CR"]) if api_config else ["AR", "FA", "CP", "CR"]
+
+    # Get thread-local metrics
+    cached_metrics = _get_metrics(thresholds, judge)
 
     res = {
         "id": rec_id,
@@ -138,18 +138,18 @@ def _evaluate_record_inner(
         "actual_answer": actual_answer,
     }
 
-    # Run Metrics (Sequential in this thread)
-    metrics_map = {
-        "AR": (AnswerRelevancyMetric, "answer_relevancy", True),
-        "FA": (FaithfulnessMetric, "faithfulness", has_context),
-        "CP": (ContextualPrecisionMetric, "contextual_precision", has_context and has_expected),
-        "CR": (ContextualRecallMetric, "contextual_recall", has_context and has_expected),
+    # Run Metrics
+    metrics_config = {
+        "AR": ("answer_relevancy", True),
+        "FA": ("faithfulness", has_context),
+        "CP": ("contextual_precision", has_context and has_expected),
+        "CR": ("contextual_recall", has_context and has_expected),
     }
 
-    for m_id, (m_class, m_prefix, condition) in metrics_map.items():
+    for m_id, (m_prefix, condition) in metrics_config.items():
         if m_id in enabled_metrics and condition:
             try:
-                m = m_class(threshold=thresholds.get(m_id, 0.7), model=judge, include_reason=True)
+                m = cached_metrics[m_id]
                 m.measure(tc)
                 res[f"{m_prefix}_score"] = m.score
                 res[f"{m_prefix}_passed"] = m.is_successful()

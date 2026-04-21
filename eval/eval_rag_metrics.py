@@ -12,6 +12,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
 import yaml
 from core.checkpoint import load_checkpoint
@@ -28,7 +29,7 @@ load_dotenv(Path(__file__).parent / ".env")
 THRESHOLD_DEFAULTS = {"AR": 0.7, "FA": 0.8, "CP": 0.7, "CR": 0.6}
 MAX_WORKERS = 3
 API_CONFIG: dict | None = None
-PROGRESS_CALLBACK: callable | None = None
+PROGRESS_CALLBACK: Callable | None = None
 API_LOG: list = []
 ERRORS_LOG: list = []
 API_LOG_LOCK = threading.Lock()
@@ -56,15 +57,34 @@ def _resolve_judge(alias: str) -> dict:
 
 
 def run_eval(
-    input_path: str, limit: int = None, judge_alias: str = None, api_contract: dict = None, progress_cb: callable = None
+    input_path: str,
+    limit: int | None = None,
+    judge_config: str | None = None,
+    api_contract: dict | None = None,
+    metrics: list[str] | None = None,
+    progress_callback: Callable | None = None,
+    workers: int | None = None,
+    thresholds: dict | None = None,
 ) -> Path:
     """Основная точка входа для запуска оценки."""
-    global API_CONFIG, PROGRESS_CALLBACK
+    global API_CONFIG, PROGRESS_CALLBACK, MAX_WORKERS, THRESHOLD_DEFAULTS
+
+    # Initialize API_CONFIG if it's None to avoid errors when setting metrics
+    if api_contract is None:
+        api_contract = {}
+
+    if metrics:
+        api_contract["metrics"] = metrics
+
     API_CONFIG = api_contract
-    PROGRESS_CALLBACK = progress_cb
+    PROGRESS_CALLBACK = progress_callback
+    if workers:
+        MAX_WORKERS = workers
+    if thresholds:
+        THRESHOLD_DEFAULTS = thresholds
 
     # 1. Setup Judge
-    judge_name = judge_alias or os.getenv("JUDGE_ALIAS", "openai")
+    judge_name = judge_config or os.getenv("JUDGE_ALIAS", "openai")
     try:
         judge_cfg = _resolve_judge(judge_name)
     except Exception as e:
@@ -98,15 +118,24 @@ def run_eval(
     print(f"\n[+] Dataset   : {path}")
     print(f"[+] Judge     : {judge_cfg['provider']} / {judge_cfg['model']}")
     print(f"[+] Workers   : {MAX_WORKERS}")
+    print(f"[+] Thresholds: {THRESHOLD_DEFAULTS}")
     print(f"[+] Samples   : {len(data)}")
     print(f"[+] Output    : {run_dir}\n")
 
     # 4. Processing
+    from core.judges import build_judge
+
+    judge_obj = build_judge(
+        provider=judge_cfg["provider"],
+        model=judge_cfg["model"],
+        no_reasoning=judge_cfg.get("no_reasoning", False),
+    )
+
     results = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
             executor.submit(
-                evaluate_record, rec, i + 1, len(data), done, lock, run_dir, judge_cfg, THRESHOLD_DEFAULTS, API_CONFIG
+                evaluate_record, rec, i + 1, len(data), done, lock, run_dir, judge_obj, THRESHOLD_DEFAULTS, API_CONFIG
             ): rec
             for i, rec in enumerate(data)
         }
@@ -163,7 +192,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        run_eval(args.input, limit=args.limit, judge_alias=args.judge)
+        run_eval(args.input, limit=args.limit, judge_config=args.judge)
     except Exception as e:
         print(f"[FATAL] {e}")
         sys.exit(1)

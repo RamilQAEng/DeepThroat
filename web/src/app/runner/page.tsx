@@ -28,8 +28,8 @@ export default function RunnerPage() {
 
     // Настройки для Eval
     const [limit, setLimit] = useState<string>("");
-    const [evalJudge, setEvalJudge] = useState("gpt4o-mini-or");
-    const [workers, setWorkers] = useState<string>("4");
+    const [evalJudge, setEvalJudge] = useState("DeepSeek V3.2");
+    const [workers, setWorkers] = useState<string>("1");
     const [metrics, setMetrics] = useState({ AR: true, FA: true, CP: true, CR: true });
     const [thresholds, setThresholds] = useState({ AR: "0.80", FA: "0.90", CP: "0.70", CR: "0.75" });
 
@@ -109,11 +109,17 @@ export default function RunnerPage() {
 
             if (activeTab === "eval") {
                 endpoint = "/api/runner";
-                payload.dataset_path = datasetPath;
-                payload.judge = evalJudge;
-                payload.limit = limit ? parseInt(limit) : undefined;
-                payload.workers = workers ? parseInt(workers) : 4;
-                payload.api_contract.metrics = Object.keys(metrics).filter(k => metrics[k as keyof typeof metrics]);
+                payload.dataset = datasetPath;
+                payload.model = evalJudge;
+                payload.n_samples = limit ? parseInt(limit) : undefined;
+                payload.workers = workers ? parseInt(workers) : 1;
+                payload.metrics = Object.keys(metrics).filter(k => {
+                    const map: Record<string, string> = { AR: "answer_relevancy", FA: "faithfulness", CP: "contextual_precision", CR: "contextual_recall" };
+                    return metrics[k as keyof typeof metrics];
+                }).map(k => {
+                    const map: Record<string, string> = { AR: "answer_relevancy", FA: "faithfulness", CP: "contextual_precision", CR: "contextual_recall" };
+                    return map[k];
+                });
                 payload.thresholds = {};
                 Object.keys(metrics).forEach(k => {
                     if (metrics[k as keyof typeof metrics]) {
@@ -122,8 +128,8 @@ export default function RunnerPage() {
                 });
             } else {
                 endpoint = "/api/runner/redteam";
-                payload.judge = redteamJudge;
-                payload.attacks_per_vulnerability = attacksPerVuln ? parseInt(attacksPerVuln) : 1;
+                payload.target = redteamJudge;
+                payload.num_attacks = attacksPerVuln ? parseInt(attacksPerVuln) : 10;
                 payload.threshold = threshold ? parseFloat(threshold) : 0.20;
             }
 

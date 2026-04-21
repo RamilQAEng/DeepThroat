@@ -70,6 +70,8 @@ async def run_eval_background(job_id: str, config: EvalRequest, jobs_dict: dict[
             n_samples=config.n_samples,
             api_contract=config.api_contract,
             progress_callback=progress_callback,
+            workers=config.workers,
+            thresholds=config.thresholds,
         )
 
         jobs_dict[job_id].status = "completed"

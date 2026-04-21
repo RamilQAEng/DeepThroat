@@ -8,21 +8,23 @@ export async function POST(req: Request) {
     console.log('[/api/runner] Received body:', JSON.stringify(body, null, 2));
 
     // Валидация
-    if (!body.dataset_path || !body.judge) {
-      console.error('[/api/runner] Validation failed:', { dataset_path: body.dataset_path, judge: body.judge });
+    if (!body.dataset || !body.model) {
+      console.error('[/api/runner] Validation failed:', { dataset: body.dataset, model: body.model });
       return NextResponse.json(
-        { error: 'Missing required fields: dataset_path, judge' },
+        { error: 'Missing required fields: dataset, model' },
         { status: 400 }
       );
     }
 
     // Запрос к FastAPI микросервису
     const fastapiPayload = {
-      dataset: body.dataset_path,
-      model: body.judge,
-      metrics: body.api_contract?.metrics || ['answer_relevancy', 'faithfulness', 'contextual_precision'],
-      n_samples: body.limit || 50,
+      dataset: body.dataset,
+      model: body.model,
+      metrics: body.metrics || ['answer_relevancy', 'faithfulness', 'contextual_precision'],
+      n_samples: body.n_samples || 50,
       api_contract: body.api_contract || null,
+      workers: body.workers || 1,
+      thresholds: body.thresholds || null,
     };
     console.log('[/api/runner] Sending to FastAPI:', JSON.stringify(fastapiPayload, null, 2));
 

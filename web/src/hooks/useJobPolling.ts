@@ -28,7 +28,7 @@ interface UseJobPollingOptions {
 export function useJobPolling({
   jobId,
   enabled,
-  interval = 2000,
+  interval = 3000,
   onComplete,
   onError,
 }: UseJobPollingOptions) {
