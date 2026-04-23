@@ -56,8 +56,9 @@ export async function GET(request: Request) {
     entries.filter(e => e.isDirectory() && !e.name.endsWith('_ragas')).forEach(d => {
         const metricPath = path.join(evalResultsDir, d.name, 'metrics.json');
         if (fs.existsSync(metricPath)) {
+            const label = parseScanLabel(d.name);
             scans.push({
-                label: parseScanLabel(d.name),
+                label: label,
                 value: d.name,
                 timestamp: fs.statSync(metricPath).mtimeMs
             });

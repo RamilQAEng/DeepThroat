@@ -36,14 +36,17 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: `File not found: ${filePath}` }, { status: 404 });
     }
 
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const stats = fs.statSync(filePath);
+    const content = fs.readFileSync(filePath); // Read as Buffer, not string
     const mimeType = fileType === 'md' ? 'text/markdown; charset=utf-8' : 'text/csv; charset=utf-8';
-    const downloadName = scanFile + '_' + fileName;
+    const downloadName = (scanFile + '_' + fileName).replace(/\s+/g, '_');
 
-    return new Response(content, {
+    return new NextResponse(content, {
         headers: {
             'Content-Type': mimeType,
-            'Content-Disposition': `attachment; filename=${downloadName}`,
+            'Content-Length': stats.size.toString(),
+            'Content-Disposition': `attachment; filename="${downloadName}"`,
+            'Cache-Control': 'no-cache',
         },
     });
 }
