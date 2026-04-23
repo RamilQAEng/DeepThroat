@@ -147,7 +147,7 @@ def main() -> None:
     parser.add_argument(
         "--api-url",
         default=None,
-        help="URL живого RAG API (по умолчанию RAG_API_BASE_URL из env или https://assist.dev.mglk.ru)",
+        help="URL живого RAG API (по умолчанию RAG_API_BASE_URL из env или http://localhost:8000)",
     )
     parser.add_argument(
         "--limit",
@@ -183,7 +183,7 @@ def main() -> None:
             api_config_dict = json.load(f)
         mode = "динамический API"
     elif args.online:
-        api_url = args.api_url or _os.getenv("RAG_API_BASE_URL") or "https://assist.dev.mglk.ru"
+        api_url = args.api_url or _os.getenv("RAG_API_BASE_URL") or "http://localhost:8000"
         mode = f"онлайн ({api_url})"
     else:
         mode = "офлайн"

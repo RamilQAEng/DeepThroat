@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent.parent / "eval" / ".env")
 
-BASE_URL = os.getenv("RAG_API_BASE_URL", "https://assist.dev.mglk.ru")
+BASE_URL = os.getenv("RAG_API_BASE_URL", "http://localhost:8000")
 
 DEFAULT_DATASET = (
     Path(__file__).parent.parent.parent / "eval" / "datasets" / "20260329_173829_exp_top_k_10_dataset.json"

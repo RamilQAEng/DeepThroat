@@ -19,7 +19,7 @@ export default function RunnerPage() {
     const [judges, setJudges] = useState<{ name: string; model: string; provider: string }[]>([]);
 
     // Общие поля API контракта
-    const [url, setUrl] = useState("https://assist.dev.mglk.ru/api/v1/eval/rag");
+    const [url, setUrl] = useState("http://localhost:8000/api/v1/eval/rag");
     const [method, setMethod] = useState("POST");
     const [headersStr, setHeadersStr] = useState("{\n  \"Content-Type\": \"application/json\"\n}");
     const [bodyStr, setBodyStr] = useState("{\n  \"question\": \"{{user_query}}\",\n  \"category\": \"{{category}}\"\n}");
