@@ -67,8 +67,9 @@ results/*.parquet
 PLAN.md
 changelog.md
 
-# Client-specific scripts
-scripts/manjerok_*.py
+# Client-specific scripts (tracked on feat/manjerok branch only)
+scripts/manjerok_redteam_replay.py
+!scripts/manjerok_deepteam_run.py
 
 # Client datasets (не хранить в репо)
 eval/datasets/
