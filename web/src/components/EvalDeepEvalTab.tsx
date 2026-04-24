@@ -34,10 +34,29 @@ export default function EvalDeepEvalTab() {
   const downloadFile = (type: "md" | "csv" | "json") => {
     if (!activeScan) return;
     const url = `/api/eval/report?scan=${encodeURIComponent(activeScan)}&type=${type}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rag_quality_${activeScan}.${type}`;
-    a.click();
+    
+    // Use fetch + blob for more reliable downloads in Chrome/Safari.
+    // This allows us to handle the file in memory and force a correct filename.
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Ошибки при скачивании: ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        // Create a temporary local URL for the downloaded blob
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        // Setting the download attribute forces the browser to save the file with this name
+        a.download = `${activeScan}_report.${type}`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up: remove the temporary URL and the link element
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      })
+      .catch((err) => alert(`Не удалось скачать файл: ${err.message}`));
   };
 
   const exportPdf = () => {

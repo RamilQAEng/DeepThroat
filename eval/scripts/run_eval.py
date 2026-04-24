@@ -193,13 +193,19 @@ def main() -> None:
     print(f"[+] Threshold : {threshold}")
     print(f"[+] Workers   : {max_workers}")
 
-    # Build judge config to pass to eval pipeline
-    judge_config = {
-        "provider": provider,
-        "model": model,
-        "name": target["name"],
-        "no_reasoning": target.get("no_reasoning", False),
-    }
+    # Build api_contract: for online mode embed the URL, for dynamic mode use the loaded dict
+    if api_config_dict:
+        api_contract = api_config_dict
+    elif api_url:
+        api_contract = {
+            "url": api_url.rstrip("/") + "/api/v1/eval/rag",
+            "method": "POST",
+            "headers": {},
+            "body": {"question": "{{user_query}}", "category": "{{category}}"},
+            "extractors": {"answer": "answer", "chunks": "retrieved_chunks"},
+        }
+    else:
+        api_contract = None
 
     # Import and run eval pipeline
     sys.path.insert(0, str(eval_dir))
@@ -207,11 +213,10 @@ def main() -> None:
 
     run_eval(
         input_path=args.input,
-        judge_config=judge_config,
-        max_workers=max_workers,
-        threshold=threshold,
-        api_url=api_url,
-        api_config_dict=api_config_dict,
+        judge_config=target["name"],
+        api_contract=api_contract,
+        workers=max_workers,
+        thresholds={"AR": threshold, "FA": threshold, "CP": threshold, "CR": threshold},
         limit=args.limit,
     )
 
