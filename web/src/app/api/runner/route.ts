@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const FASTAPI_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const FASTAPI_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function POST(req: Request) {
   try {
@@ -17,13 +17,15 @@ export async function POST(req: Request) {
     }
 
     // Запрос к FastAPI микросервису
+    const nSamples = Number(body.n_samples);
+    const workers = Number(body.workers);
     const fastapiPayload = {
       dataset: body.dataset,
       model: body.model,
       metrics: body.metrics || ['answer_relevancy', 'faithfulness', 'contextual_precision'],
-      n_samples: body.n_samples || 50,
+      n_samples: nSamples >= 1 ? nSamples : 50,
       api_contract: body.api_contract || null,
-      workers: body.workers || 1,
+      workers: workers >= 1 ? workers : 1,
       thresholds: body.thresholds || null,
     };
     console.log('[/api/runner] Sending to FastAPI:', JSON.stringify(fastapiPayload, null, 2));

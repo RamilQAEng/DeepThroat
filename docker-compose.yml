@@ -1,36 +1,42 @@
-version: '3.8'
-
 services:
-  # FastAPI Backend
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
-    env_file:
-      - .env
+    container_name: deepthroath-api
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
-      - /app/.venv
-      - /app/node_modules
+      - ./src:/app/src
+      - ./eval:/app/eval
+      - ./eval/results:/app/eval/results
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
+    restart: unless-stopped
     networks:
       - deepthroath-network
 
-  # Next.js Frontend
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
+    container_name: deepthroath-web
     ports:
       - "3000:3000"
+    volumes:
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+      - ./eval/datasets:/eval/datasets
+      - ./eval/config:/eval/config
+      - ./eval/results:/eval/results
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - API_URL=http://api:8000
     depends_on:
       - api
+    restart: unless-stopped
     networks:
       - deepthroath-network
 

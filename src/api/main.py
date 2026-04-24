@@ -3,6 +3,7 @@ FastAPI микросервис для долгих LLM задач.
 Заменяет child_process.spawn из Next.js API routes.
 """
 
+import logging
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -10,6 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .runner import run_eval_background, run_redteam_background
 from .schemas import EvalRequest, JobResponse, JobStatus, RedTeamRequest
+
+
+class _SuppressStatusPolling(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/api/jobs/" not in record.getMessage()
+
+
+logging.getLogger("uvicorn.access").addFilter(_SuppressStatusPolling())
 
 app = FastAPI(title="DeepThroath API", version="1.0.0", description="API для Red Team и RAG Evaluation")
 
