@@ -47,13 +47,9 @@ def _resolve_judge(alias: str) -> dict:
     targets = {t["name"]: t for t in cfg.get("targets", [])}
     if alias not in targets:
         raise ValueError(f"Judge '{alias}' not in targets.yaml")
-    t = targets[alias]
-    return {
-        "provider": t["provider"].lower(),
-        "model": t["model"],
-        "name": alias,
-        "no_reasoning": t.get("no_reasoning", False),
-    }
+    t = dict(targets[alias])
+    t["provider"] = t["provider"].lower()
+    return t
 
 
 def run_eval(
@@ -135,6 +131,7 @@ def run_eval(
         provider=judge_cfg["provider"],
         model=judge_cfg["model"],
         no_reasoning=judge_cfg.get("no_reasoning", False),
+        extra_cfg=judge_cfg,
     )
 
     results = []

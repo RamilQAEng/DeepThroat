@@ -1,5 +1,5 @@
 targets:
-  - name: DeepSeek V3.2
+  - name: deepseek-v3
     provider: openrouter
     model: deepseek/deepseek-v3.2
     description: "DeepSeek V3.2 — высокое качество"
@@ -46,4 +46,14 @@ targets:
     provider: gigachat
     model: GigaChat-Pro
     description: "Российская модель-судья"
+    threshold: 0.7
+
+  - name: local-qwen
+    provider: local
+    model: Qwen3.6-35B
+    base_url: https://hwbop3ln8f.localto.net/v1
+    api_key: sk-antigravity-secure-access
+    headers:
+      localtonet-skip-warning: "true"
+    description: "Локальный Qwen 35B (через туннель)"
     threshold: 0.7

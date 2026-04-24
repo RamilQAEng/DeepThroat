@@ -1,3 +1,4 @@
+import re
 import threading
 from typing import Any, Dict, List, Optional
 
@@ -40,6 +41,30 @@ def resolve_template(template: Any, rec: Dict[str, Any]) -> Any:
     elif isinstance(template, list):
         return [resolve_template(v, rec) for v in template]
     return template
+
+
+def strip_cta(text: str) -> str:
+    """Убирает стандартные вежливые фразы бота в конце сообщения."""
+    if not text:
+        return ""
+
+    # Список паттернов для удаления (регистронезависимо)
+    patterns = [
+        r"Чем я еще могу помочь\??",
+        r"Чем я ещё могу помочь\??",
+        r"Хотите узнать подробнее о каком-нибудь заведении\??",
+        r"Хотите узнать больше о какой-то конкретной процедуре\??",
+        r"Хотите узнать больше о конкретных ресторанах или кафе\??",
+        r"Хотите узнать что-то еще\??",
+        r"Буду рад помочь с другими вопросами\.",
+        r"Если у вас есть еще вопросы, обращайтесь\.",
+    ]
+
+    cleaned = text
+    for pattern in patterns:
+        cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
+
+    return cleaned.strip()
 
 
 def fetch_from_api(
@@ -101,6 +126,9 @@ def fetch_from_api(
     ex_chunks = extractors.get("chunks", "retrieved_chunks")
 
     answer = get_value_by_path(data, ex_answer, "")
+    # Очищаем ответ от CTA перед оценкой
+    answer = strip_cta(answer)
+
     chunks_raw = get_value_by_path(data, ex_chunks, [])
 
     chunks_text = []
@@ -120,19 +148,13 @@ def fetch_from_api(
 
     enriched = dict(rec)
     enriched["user_query"] = question
-    enriched["actual_answer"] = answer
+    enriched["actual_output"] = answer
     enriched["retrieval_context"] = chunks_text
 
     if api_log is not None and log_lock is not None:
-        log_entry = {
-            "id": rec.get("id") or rec.get("session_id"),
-            "question": question,
-            "category": category,
-            "answer": answer,
-            "chunks_count": len(chunks_text),
-            "retrieved_chunks": [{"content": c} for c in chunks_text],
-            "api_url": url,
-        }
+        log_entry = dict(enriched)
+        log_entry["api_url"] = url
+        log_entry["chunks_count"] = len(chunks_text)
         with log_lock:
             api_log.append(log_entry)
 

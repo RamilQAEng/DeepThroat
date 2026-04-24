@@ -70,10 +70,51 @@ function buildSummary(scan: string, rows: MetricRow[]): ScanSummary {
 }
 
 function buildRowDiffs(rowsA: MetricRow[], rowsB: MetricRow[]): RowDiff[] {
-  // match rows by id or by index
+  const hasIds = rowsA.some((r) => r.id) || rowsB.some((r) => r.id);
+
+  if (hasIds) {
+    const mapB = new Map<string, MetricRow>();
+    rowsB.forEach((r) => {
+      if (r.id) mapB.set(String(r.id), r);
+    });
+
+    const allIds = new Map<string, MetricRow>();
+    rowsA.forEach((r) => { if (r.id) allIds.set(String(r.id), r); });
+    rowsB.forEach((r) => { if (r.id) allIds.set(String(r.id), r); });
+
+    const diffs: RowDiff[] = [];
+    allIds.forEach((_, id) => {
+      const a = rowsA.find((r) => String(r.id) === id) ?? null;
+      const b = mapB.get(id) ?? null;
+      const base = a ?? b!;
+
+      const scores_a: Record<ScoreKey, number | null> = {} as Record<ScoreKey, number | null>;
+      const scores_b: Record<ScoreKey, number | null> = {} as Record<ScoreKey, number | null>;
+      const delta: Record<ScoreKey, number | null> = {} as Record<ScoreKey, number | null>;
+
+      for (const key of SCORE_KEYS) {
+        const va = (a?.[key] as number | null | undefined) ?? null;
+        const vb = (b?.[key] as number | null | undefined) ?? null;
+        scores_a[key] = va;
+        scores_b[key] = vb;
+        delta[key] = va !== null && vb !== null ? vb - va : null;
+      }
+
+      diffs.push({
+        id,
+        query: String(base?.user_query ?? ""),
+        category: (base?.category as string) ?? null,
+        scores_a,
+        scores_b,
+        delta,
+      });
+    });
+    return diffs;
+  }
+
+  // Fallback: no ids — match by index
   const len = Math.max(rowsA.length, rowsB.length);
   const diffs: RowDiff[] = [];
-
   for (let i = 0; i < len; i++) {
     const a = rowsA[i] ?? null;
     const b = rowsB[i] ?? null;
@@ -100,7 +141,6 @@ function buildRowDiffs(rowsA: MetricRow[], rowsB: MetricRow[]): RowDiff[] {
       delta,
     });
   }
-
   return diffs;
 }
 

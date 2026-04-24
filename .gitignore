@@ -69,3 +69,25 @@ changelog.md
 
 # Client-specific scripts
 scripts/manjerok_*.py
+
+# Client datasets (не хранить в репо)
+eval/datasets/
+eval/datasets/**
+
+# Client API configs
+config/manjerok_api.json
+config/*_api.json
+
+# Local planning docs
+.planning/
+
+# Temporary / scratch scripts
+scratch/
+
+# Personal notes (use docs_my/ instead)
+docs_my/
+docs/eval_updates_*.md
+
+# Intermediate eval notes
+eval/COMPARISON-*.md
+eval/SUMMARY-*.md

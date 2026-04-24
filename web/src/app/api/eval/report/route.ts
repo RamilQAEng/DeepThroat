@@ -32,18 +32,25 @@ export async function GET(request: Request) {
         filePath = path.join(evalResultsDir, scanFile, fileName);
     }
 
+    // Check if file exists before reading
     if (!fs.existsSync(filePath)) {
         return NextResponse.json({ error: `File not found: ${filePath}` }, { status: 404 });
     }
 
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const stats = fs.statSync(filePath);
+    // Read as Buffer to prevent encoding issues with large files or special characters
+    const content = fs.readFileSync(filePath);
     const mimeType = fileType === 'md' ? 'text/markdown; charset=utf-8' : 'text/csv; charset=utf-8';
-    const downloadName = scanFile + '_' + fileName;
 
-    return new Response(content, {
+    // Clean filename and ensure it's quoted for browser compatibility
+    const downloadName = (scanFile + '_' + fileName).replace(/\s+/g, '_');
+
+    return new NextResponse(content, {
         headers: {
             'Content-Type': mimeType,
-            'Content-Disposition': `attachment; filename=${downloadName}`,
+            'Content-Length': stats.size.toString(),
+            'Content-Disposition': `attachment; filename="${downloadName}"`,
+            'Cache-Control': 'no-cache',
         },
     });
 }
