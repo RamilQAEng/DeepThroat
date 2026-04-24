@@ -18,6 +18,7 @@ Usage:
     #   gpt4o-mini-or   — GPT-4o-mini (быстрый)
     #   deepseek-v3     — DeepSeek V3.2
 """
+
 import argparse
 import json
 import re
@@ -55,21 +56,20 @@ def convert(src: Path, dst: Path) -> None:
             stripped_count += 1
 
         chunks = rec.get("retrieved_chunks", [])
-        retrieval_context = [
-            c["content"] if isinstance(c, dict) and "content" in c else str(c)
-            for c in chunks
-        ]
+        retrieval_context = [c["content"] if isinstance(c, dict) and "content" in c else str(c) for c in chunks]
 
-        dataset.append({
-            "id": rec.get("id") or rec.get("session_id"),
-            "session_id": rec.get("session_id") or rec.get("id"),
-            "question": rec.get("question") or rec.get("user_query", ""),
-            "user_query": rec.get("question") or rec.get("user_query", ""),
-            "category": rec.get("category", ""),
-            "expected_answer": rec.get("expected_answer") or rec.get("expected_output", ""),
-            "actual_answer": clean_answer,
-            "retrieval_context": retrieval_context,
-        })
+        dataset.append(
+            {
+                "id": rec.get("id") or rec.get("session_id"),
+                "session_id": rec.get("session_id") or rec.get("id"),
+                "question": rec.get("question") or rec.get("user_query", ""),
+                "user_query": rec.get("question") or rec.get("user_query", ""),
+                "category": rec.get("category", ""),
+                "expected_answer": rec.get("expected_answer") or rec.get("expected_output", ""),
+                "actual_answer": clean_answer,
+                "retrieval_context": retrieval_context,
+            }
+        )
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
@@ -82,7 +82,9 @@ def convert(src: Path, dst: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Strip CTA suffixes and convert api_responses.json to eval dataset")
     parser.add_argument("input", help="Path to api_responses.json")
-    parser.add_argument("--output", default=None, help="Output dataset path (default: same dir as input, stripped_dataset.json)")
+    parser.add_argument(
+        "--output", default=None, help="Output dataset path (default: same dir as input, stripped_dataset.json)"
+    )
     args = parser.parse_args()
 
     src = Path(args.input)

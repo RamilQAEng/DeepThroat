@@ -35,7 +35,7 @@ class OpenRouterJudge(DeepEvalBaseLLM):
         # 1. Базовая очистка от markdown
         text = re.sub(r"```json\s*", "", text)
         text = re.sub(r"```\s*", "", text)
-        
+
         # 2. Попытка найти JSON-блок через regex
         match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
         if match:
@@ -49,15 +49,15 @@ class OpenRouterJudge(DeepEvalBaseLLM):
                 text = candidate
 
         # 3. Крайняя мера: чистим всё до { и после }
-        start = text.find('{')
-        end = text.rfind('}')
+        start = text.find("{")
+        end = text.rfind("}")
         if start != -1 and end != -1:
             try:
-                candidate = text[start:end+1]
+                candidate = text[start : end + 1]
                 return json.dumps(json.loads(candidate), ensure_ascii=False)
             except Exception:
                 pass
-        
+
         return text.strip()
 
     def generate(self, prompt: str) -> str:

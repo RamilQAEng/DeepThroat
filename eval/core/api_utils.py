@@ -47,7 +47,7 @@ def strip_cta(text: str) -> str:
     """Убирает стандартные вежливые фразы бота в конце сообщения."""
     if not text:
         return ""
-    
+
     # Список паттернов для удаления (регистронезависимо)
     patterns = [
         r"Чем я еще могу помочь\??",
@@ -59,11 +59,11 @@ def strip_cta(text: str) -> str:
         r"Буду рад помочь с другими вопросами\.",
         r"Если у вас есть еще вопросы, обращайтесь\.",
     ]
-    
+
     cleaned = text
     for pattern in patterns:
         cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
-    
+
     return cleaned.strip()
 
 
@@ -128,7 +128,7 @@ def fetch_from_api(
     answer = get_value_by_path(data, ex_answer, "")
     # Очищаем ответ от CTA перед оценкой
     answer = strip_cta(answer)
-    
+
     chunks_raw = get_value_by_path(data, ex_chunks, [])
 
     chunks_text = []
