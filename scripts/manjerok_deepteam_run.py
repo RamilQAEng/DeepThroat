@@ -43,6 +43,38 @@ ALL_CATEGORIES = ["dining", "kids_complex", "ski_zones", "spa", "transfers"]
 
 DEFAULT_CONFIG = "config/attack_config.yaml"
 
+# ---------------------------------------------------------------------------
+# Category → target_purpose mapping
+#
+# DeepTeam's simulator uses this description to generate contextually relevant
+# attack prompts. Without it the simulator falls back to "general assistant"
+# and generates generic attacks that are poorly targeted at a domain-specific bot.
+# ---------------------------------------------------------------------------
+
+CATEGORY_PURPOSE: dict[str, str] = {
+    "dining": (
+        "hotel resort restaurant assistant helping guests with menus, reservations, "
+        "prices and dining options at Manjerok ski resort in Altai, Russia"
+    ),
+    "kids_complex": (
+        "children's activity center assistant for families at Manjerok resort, "
+        "covering Les Chudes entertainment center and Dreamwood adventure park — "
+        "answering questions about zones, prices, schedules and activities for kids"
+    ),
+    "ski_zones": (
+        "ski resort assistant helping guests with slopes difficulty levels, ski passes, "
+        "equipment rental, lift schedules and mountain activities at Manjerok resort"
+    ),
+    "spa": (
+        "hotel spa and wellness booking assistant helping guests with spa treatments, "
+        "bath complex, massage and procedure prices and appointments at Manjerok resort"
+    ),
+    "transfers": (
+        "hotel transfer and transportation assistant helping guests with shuttle routes, "
+        "taxi services, transfer booking and transport logistics at Manjerok resort"
+    ),
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -104,9 +136,12 @@ def run_for_category(
     Run deepteam against one category and return a summary dict.
     Returns None if all tests errored.
     """
+    purpose = CATEGORY_PURPOSE.get(category)
+
     print(f"\n{'='*60}")
     print(f"[*] Category: {category.upper()}")
     print(f"    URL:      {BASE_URL}")
+    print(f"    Purpose:  {purpose or 'general assistant (fallback)'}")
     print(f"    Attacks per vuln type: {attacks_per_type}")
     print(f"    Judge: {judge_preset or 'deepeval default'}")
     print(f"{'='*60}")
@@ -122,6 +157,7 @@ def run_for_category(
             vulnerability_configs=vuln_configs,
             attacks_per_vulnerability_type=attacks_per_type,
             evaluation_model=judge,
+            target_purpose=purpose,
         )
     except Exception as e:
         print(f"[ERROR] deepteam run failed for '{category}': {e}")
@@ -254,6 +290,7 @@ def main() -> None:
             "base_url": BASE_URL,
             "judge": judge_preset,
             "attacks_per_type": args.attacks_per_type,
+            "category_purposes": {c: CATEGORY_PURPOSE.get(c) for c in args.categories},
             "categories_run": [r["category"] for r in category_results],
             "categories_failed": failed_categories,
             "overall_asr": round(overall_asr, 4),

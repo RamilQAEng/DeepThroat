@@ -111,8 +111,17 @@ def run_red_team(
     vulnerability_configs: list[VulnerabilityConfig] | None = None,
     attacks_per_vulnerability_type: int = 1,
     evaluation_model: Any = None,
+    target_purpose: str | None = None,
 ) -> Any:
-    """Run DeepTeam evaluation and return RiskAssessment."""
+    """Run DeepTeam evaluation and return RiskAssessment.
+
+    Args:
+        target_purpose: Natural-language description of what the target model does.
+            DeepTeam's simulator uses this to generate contextually relevant attacks.
+            Example: "hotel spa booking assistant at Manjerok resort".
+            When None, the simulator falls back to "general assistant" — attacks will
+            be generic and less effective against domain-specific bots.
+    """
 
     attacks = build_attacks(attack_configs or DEFAULT_ATTACKS)
     vulnerabilities = build_vulnerabilities(vulnerability_configs or DEFAULT_VULNERABILITIES)
@@ -127,6 +136,8 @@ def run_red_team(
     if evaluation_model is not None:
         kwargs["evaluation_model"] = evaluation_model
         kwargs["simulator_model"] = evaluation_model  # use same model for attack generation
+    if target_purpose:
+        kwargs["target_purpose"] = target_purpose
 
     return red_team(**kwargs)
 
@@ -219,6 +230,7 @@ def run(
     attack_configs: list[AttackConfig] | None = None,
     vuln_configs: list[VulnerabilityConfig] | None = None,
     api_config: dict | None = None,
+    target_purpose: str | None = None,
 ) -> Any:
     """Entry point for script/CLI usage."""
 
@@ -237,4 +249,5 @@ def run(
         vulnerability_configs=vuln_configs,
         attacks_per_vulnerability_type=attacks_per_vulnerability_type,
         evaluation_model=judge,
+        target_purpose=target_purpose,
     )
