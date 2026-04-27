@@ -30,6 +30,7 @@ from src.data.storage import save_results
 from src.data.transformer import transform_risk_assessment
 from src.red_team.attacks import AttackConfig, VulnerabilityConfig, build_attacks, build_vulnerabilities
 from src.red_team.judges import build_judge_from_preset, register_custom_presets
+from src.red_team.reporting import generate_report
 from src.red_team.runner import create_http_callback, run_red_team
 
 # ---------------------------------------------------------------------------
@@ -192,6 +193,8 @@ def run_for_category(
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     parser = argparse.ArgumentParser(
         description="Run DeepTeam red-teaming against the Manjerok bot for each category."
     )
@@ -220,18 +223,15 @@ def main() -> None:
         default=DEFAULT_CONFIG,
         help=f"Attack config YAML (default: {DEFAULT_CONFIG})",
     )
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     parser.add_argument(
-        "--output",
-        default=f"results/manjerok_deepteam_{timestamp}.json",
-        help="Summary JSON output path",
+        "--output-dir",
+        default=f"results/manjerok_rt_{timestamp}",
+        help="Directory for report output (default: results/manjerok_rt_TIMESTAMP)",
     )
     args = parser.parse_args()
 
-    # Load attack/vuln config
     cfg = _load_yaml(args.config)
 
-    # Register custom judge presets if any
     custom_presets = cfg.get("judge_custom_presets", {})
     if custom_presets:
         register_custom_presets(custom_presets)
@@ -239,11 +239,12 @@ def main() -> None:
     judge_preset = args.judge or cfg.get("judge_preset") or None
     attack_configs, vuln_configs = _parse_configs(cfg)
 
-    print(f"[+] Categories: {args.categories}")
-    print(f"[+] Attack types: {[a.name for a in attack_configs] if attack_configs else 'default'}")
-    print(f"[+] Vulnerabilities: {[v.name for v in vuln_configs] if vuln_configs else 'default'}")
+    print(f"[+] Categories:     {args.categories}")
+    print(f"[+] Attack types:   {[a.name for a in attack_configs] if attack_configs else 'default'}")
+    print(f"[+] Vulnerabilities:{[v.name for v in vuln_configs] if vuln_configs else 'default'}")
+    print(f"[+] Output dir:     {args.output_dir}")
 
-    # Run deepteam for each category
+    collected_dfs = []
     category_results = []
     failed_categories = []
 
@@ -259,20 +260,15 @@ def main() -> None:
             failed_categories.append(category)
             continue
 
-        # Save per-category parquet via existing storage
+        collected_dfs.append(result["df"])
+
         try:
             path = save_results(result["df"])
-            print(f"[+] Saved: {path}")
-            result["saved_path"] = str(path)
+            print(f"[+] Parquet saved: {path}")
         except Exception as e:
             print(f"[!] Could not save parquet for '{category}': {e}")
-            result["saved_path"] = None
 
-        category_results.append({
-            "category": result["category"],
-            "asr": result["asr"],
-            "saved_path": result.get("saved_path"),
-        })
+        category_results.append({"category": result["category"], "asr": result["asr"]})
 
     # Overall summary
     print(f"\n{'='*60}")
@@ -283,29 +279,29 @@ def main() -> None:
     if failed_categories:
         print(f"\n[!] Failed categories: {failed_categories}")
 
-    if category_results:
-        overall_asr = sum(r["asr"] for r in category_results) / len(category_results)
-        print(f"\n  Overall mean ASR: {overall_asr:.1%}")
-
-        summary = {
-            "timestamp": datetime.now().isoformat(),
-            "base_url": BASE_URL,
-            "judge": judge_preset,
-            "attacks_per_type": args.attacks_per_type,
-            "category_purposes": {c: CATEGORY_PURPOSE.get(c) for c in args.categories},
-            "categories_run": [r["category"] for r in category_results],
-            "categories_failed": failed_categories,
-            "overall_asr": round(overall_asr, 4),
-            "results": category_results,
-        }
-
-        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-        with open(args.output, "w", encoding="utf-8") as f:
-            json.dump(summary, f, ensure_ascii=False, indent=2)
-        print(f"\n[+] Summary saved → {args.output}")
-    else:
+    if not category_results:
         print("\n[!] No results collected — all categories failed.")
         sys.exit(1)
+
+    overall_asr = sum(r["asr"] for r in category_results) / len(category_results)
+    print(f"\n  Overall mean ASR: {overall_asr:.1%}")
+
+    # Generate eval-style report directory
+    output_dir = Path(args.output_dir)
+    report_dir = generate_report(
+        collected_dfs,
+        output_dir,
+        base_url=BASE_URL,
+        judge=judge_preset,
+        attacks_per_type=args.attacks_per_type,
+        category_purposes={c: CATEGORY_PURPOSE.get(c) for c in args.categories},
+        failed_categories=failed_categories,
+    )
+    print(f"\n[+] Report saved → {report_dir}/")
+    print(f"    {report_dir}/report.md")
+    print(f"    {report_dir}/attacks.json")
+    print(f"    {report_dir}/attacks.csv")
+    print(f"    {report_dir}/summary.json")
 
 
 if __name__ == "__main__":
