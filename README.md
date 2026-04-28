@@ -1,6 +1,6 @@
 <div align="center">
 
-# DeepThroath
+# DeepThroat
 
 ### LLM Security & Quality Platform
 
@@ -13,7 +13,7 @@
 
 [Features](#features) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Architecture](#architecture) • [Contributing](#contributing)
 
-![DeepThroath Dashboard](main.png)
+![DeepThroat Dashboard](main.png)
 
 </div>
 
@@ -21,7 +21,7 @@
 
 ## Features
 
-DeepThroath is an **API-first platform** that unifies three powerful LLM testing tools into a single, beautiful dashboard:
+DeepThroat is an **API-first platform** that unifies three powerful LLM testing tools into a single, beautiful dashboard:
 
 ### Red Teaming
 Proactively test your LLM against security vulnerabilities following **OWASP LLM Top 10**:
@@ -63,9 +63,9 @@ Universal tool for testing **any LLM API**:
 
 ---
 
-## Why DeepThroath?
+## Why DeepThroat?
 
-| Feature | DeepThroath | Other Tools |
+| Feature | DeepThroat | Other Tools |
 |---------|-------------|-------------|
 | **Unified Dashboard** | All-in-one: Red Team + RAG + API Testing | Separate tools |
 | **API-First** | Works with any LLM API | Limited to specific providers |
@@ -88,8 +88,8 @@ Universal tool for testing **any LLM API**:
 
 ```bash
 # Clone the repository
-git clone https://github.com/InfernYaCr/DeepThroath.git
-cd DeepThroath
+git clone https://github.com/InfernYaCr/DeepThroat.git
+cd DeepThroat
 
 # Install Python dependencies
 python -m venv .venv
@@ -325,7 +325,7 @@ Use `{{prompt}}` as placeholder:
 ## Architecture
 
 ```
-DeepThroath/
+DeepThroat/
 ├── web/                          # Next.js 16 Frontend
 │   ├── src/app/
 │   │   ├── page.tsx              # Home page
@@ -440,7 +440,7 @@ services:
 
 ## Security & Privacy
 
-**DeepThroath is designed with security in mind:**
+**DeepThroat is designed with security in mind:**
 
 ✓ **Self-Hosted** — Deploy on your own infrastructure
 ✓ **No Data Sharing** — All requests go directly to your APIs
@@ -585,6 +585,6 @@ Inspired by:
 
 **Built with ❤️ for the LLM Security Community**
 
-[⭐ Star us on GitHub](https://github.com/InfernYaCr/DeepThroath) • [Report Bug](https://github.com/InfernYaCr/DeepThroath/issues) • [Request Feature](https://github.com/InfernYaCr/DeepThroath/issues)
+[⭐ Star us on GitHub](https://github.com/InfernYaCr/DeepThroat) • [Report Bug](https://github.com/InfernYaCr/DeepThroat/issues) • [Request Feature](https://github.com/InfernYaCr/DeepThroat/issues)
 
 </div>
